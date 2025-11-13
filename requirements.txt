@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+numpy
+litellm
+pydantic
+python-dotenv
