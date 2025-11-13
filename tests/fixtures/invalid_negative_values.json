@@ -1,0 +1,64 @@
+{
+  "simulation": {
+    "decision_interval_seconds": -5.0,
+    "physics_tick_rate_seconds": 0.1
+  },
+  "ship": {
+    "starting_shields": -10.0,
+    "starting_ae": 100.0,
+    "max_ae": 100.0,
+    "ae_regen_per_second": 0.333,
+    "base_speed_units_per_second": -3.0,
+    "collision_damage": 50.0
+  },
+  "movement": {
+    "forward_ae_per_second": 0.33,
+    "forward_diagonal_ae_per_second": 0.53,
+    "lateral_ae_per_second": 0.67,
+    "backward_ae_per_second": 0.67,
+    "backward_diagonal_ae_per_second": 0.80,
+    "stop_ae_per_second": 0.0
+  },
+  "rotation": {
+    "none_ae_per_second": 0.0,
+    "soft_turn_ae_per_second": 0.13,
+    "soft_turn_degrees_per_second": 1.0,
+    "hard_turn_ae_per_second": 0.33,
+    "hard_turn_degrees_per_second": 3.0
+  },
+  "phaser": {
+    "wide": {
+      "arc_degrees": 90.0,
+      "range_units": 30.0,
+      "damage": -15.0,
+      "cooldown_seconds": 3.5
+    },
+    "focused": {
+      "arc_degrees": 10.0,
+      "range_units": 50.0,
+      "damage": 35.0,
+      "cooldown_seconds": 3.5
+    },
+    "reconfiguration_time_seconds": 15.0
+  },
+  "torpedo": {
+    "launch_cost_ae": 20.0,
+    "max_ae_capacity": 40.0,
+    "speed_units_per_second": 4.0,
+    "turn_rate_degrees_per_second": 3.0,
+    "max_active_per_ship": 4,
+    "ae_burn_straight_per_second": 0.30,
+    "ae_burn_soft_turn_per_second": 0.50,
+    "ae_burn_hard_turn_per_second": 0.70,
+    "blast_expansion_seconds": 5.0,
+    "blast_duration_seconds": 60.0,
+    "blast_dissipation_seconds": 5.0,
+    "blast_radius_units": 15.0,
+    "blast_damage_multiplier": 1.5
+  },
+  "arena": {
+    "width_units": 1000.0,
+    "height_units": 500.0,
+    "spawn_distance_units": 800.0
+  }
+}

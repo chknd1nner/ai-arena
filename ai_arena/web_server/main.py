@@ -7,8 +7,14 @@ import asyncio
 
 from ai_arena.orchestrator.match_orchestrator import MatchOrchestrator
 from ai_arena.replay.recorder import ReplayLoader
+from ai_arena.config.loader import ConfigLoader
 
 app = FastAPI(title="AI Arena API")
+
+@app.on_event("startup")
+async def validate_config():
+    """Validate config on startup to fail fast."""
+    ConfigLoader().load("config.json")
 
 # CORS for development
 app.add_middleware(

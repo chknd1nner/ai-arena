@@ -3,13 +3,19 @@ from ai_arena.game_engine.data_models import GameState, Orders, MatchConfig, Mat
 from ai_arena.llm_adapter.adapter import LLMAdapter
 from ai_arena.game_engine.physics import PhysicsEngine
 from ai_arena.replay.recorder import ReplayRecorder
+from ai_arena.config import ConfigLoader
 
 class MatchOrchestrator:
     def __init__(self, model_a: str, model_b: str):
         self.model_a = model_a
         self.model_b = model_b
+
+        # Load game configuration
+        self.config = ConfigLoader().load("config.json")
+
+        # Initialize components with config
         self.llm_adapter = LLMAdapter(model_a, model_b)
-        self.physics_engine = PhysicsEngine()
+        self.physics_engine = PhysicsEngine(self.config)
         self.replay_recorder = ReplayRecorder(model_a, model_b)
 
     async def run_match(self, max_turns: int) -> dict:
@@ -45,27 +51,33 @@ class MatchOrchestrator:
         return final_data
 
     def _initialize_match(self) -> GameState:
-        """Initializes the game state."""
-        
+        """Initializes the game state using config values."""
+
+        # Calculate spawn positions based on arena and spawn distance from config
+        spawn_distance = self.config.arena.spawn_distance_units
+        arena_width = self.config.arena.width_units
+        arena_height = self.config.arena.height_units
+        center_y = arena_height / 2
+
         ship_a = ShipState(
-            position=Vec2D(100.0, 250.0),
+            position=Vec2D((arena_width - spawn_distance) / 2, center_y),
             velocity=Vec2D(0.0, 0.0),
-            heading=0.0, # Facing right
-            shields=100,
-            ae=100,
+            heading=0.0,  # Facing right
+            shields=self.config.ship.starting_shields,
+            ae=self.config.ship.starting_ae,
             phaser_config=PhaserConfig.WIDE,
             reconfiguring_phaser=False,
         )
         ship_b = ShipState(
-            position=Vec2D(900.0, 250.0),
+            position=Vec2D((arena_width + spawn_distance) / 2, center_y),
             velocity=Vec2D(0.0, 0.0),
-            heading=3.14159, # pi, facing left
-            shields=100,
-            ae=100,
+            heading=3.14159,  # pi, facing left
+            shields=self.config.ship.starting_shields,
+            ae=self.config.ship.starting_ae,
             phaser_config=PhaserConfig.WIDE,
             reconfiguring_phaser=False,
         )
-        
+
         return GameState(turn=0, ship_a=ship_a, ship_b=ship_b, torpedoes=[])
 
     def _check_win_condition(self, state: GameState) -> Optional[str]:
