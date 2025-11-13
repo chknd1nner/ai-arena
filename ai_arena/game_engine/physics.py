@@ -4,47 +4,70 @@ import numpy as np
 from enum import Enum
 
 from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, Vec2D, MovementType, PhaserConfig
-
-# ============= Physics Constants =============
-
-FIXED_TIMESTEP = 1.0 / 60.0  # 60 Hz simulation
-ACTION_PHASE_DURATION = 60.0  # 60 simulated seconds per turn
-SUBSTEPS = int(ACTION_PHASE_DURATION / FIXED_TIMESTEP)  # 3600
-
-SHIP_SPEED = 10.0  # units per second
-TORPEDO_SPEED = 15.0  # units per second
-
-MOVEMENT_COSTS = {
-    MovementType.STRAIGHT: 5,
-    MovementType.SOFT_LEFT: 7,
-    MovementType.SOFT_RIGHT: 7,
-    MovementType.HARD_LEFT: 10,
-    MovementType.HARD_RIGHT: 10,
-    MovementType.REVERSE: 8,
-    MovementType.REVERSE_LEFT: 12,
-    MovementType.REVERSE_RIGHT: 12,
-    MovementType.STOP: 0,
-}
-
-MOVEMENT_PARAMS = {
-    MovementType.STRAIGHT: {"rotation": 0},
-    MovementType.SOFT_LEFT: {"rotation": np.radians(15)},
-    MovementType.SOFT_RIGHT: {"rotation": -np.radians(15)},
-    MovementType.HARD_LEFT: {"rotation": np.radians(45)},
-    MovementType.HARD_RIGHT: {"rotation": -np.radians(45)},
-    MovementType.REVERSE: {"rotation": np.radians(180)},
-    MovementType.REVERSE_LEFT: {"rotation": np.radians(30)},
-    MovementType.REVERSE_RIGHT: {"rotation": -np.radians(30)},
-    MovementType.STOP: {"rotation": 0},
-}
+from ai_arena.config import GameConfig
 
 # ============= Core Engine =============
 
 class PhysicsEngine:
     """
-    Stateless physics engine - pure function.
+    Configuration-driven physics engine.
     Input: GameState + Orders → Output: New GameState + Events
+
+    All physics constants are loaded from GameConfig to ensure
+    single source of truth and easy balance tuning.
     """
+
+    def __init__(self, config: GameConfig):
+        """
+        Initialize physics engine with game configuration.
+
+        Args:
+            config: GameConfig object containing all game parameters
+        """
+        self.config = config
+
+        # Compute derived simulation values
+        self.fixed_timestep = config.simulation.physics_tick_rate_seconds
+        self.action_phase_duration = config.simulation.decision_interval_seconds
+        self.substeps = int(self.action_phase_duration / self.fixed_timestep)
+
+        # Cache frequently used values
+        self.ship_speed = config.ship.base_speed_units_per_second
+        self.torpedo_speed = config.torpedo.speed_units_per_second
+
+        # Movement costs: Calculate from AE costs per second * decision interval
+        # For now, using simplified discrete costs based on config AE per second
+        decision_interval = config.simulation.decision_interval_seconds
+        self.movement_costs = {
+            MovementType.STRAIGHT: int(config.movement.forward_ae_per_second * decision_interval),
+            MovementType.SOFT_LEFT: int(config.movement.forward_diagonal_ae_per_second * decision_interval),
+            MovementType.SOFT_RIGHT: int(config.movement.forward_diagonal_ae_per_second * decision_interval),
+            MovementType.HARD_LEFT: int(config.movement.lateral_ae_per_second * decision_interval),
+            MovementType.HARD_RIGHT: int(config.movement.lateral_ae_per_second * decision_interval),
+            MovementType.REVERSE: int(config.movement.backward_ae_per_second * decision_interval),
+            MovementType.REVERSE_LEFT: int(config.movement.backward_diagonal_ae_per_second * decision_interval),
+            MovementType.REVERSE_RIGHT: int(config.movement.backward_diagonal_ae_per_second * decision_interval),
+            MovementType.STOP: int(config.movement.stop_ae_per_second * decision_interval),
+        }
+
+        # Movement parameters (rotation angles)
+        # These could be derived from rotation config in the future
+        self.movement_params = {
+            MovementType.STRAIGHT: {"rotation": 0},
+            MovementType.SOFT_LEFT: {"rotation": np.radians(15)},
+            MovementType.SOFT_RIGHT: {"rotation": -np.radians(15)},
+            MovementType.HARD_LEFT: {"rotation": np.radians(45)},
+            MovementType.HARD_RIGHT: {"rotation": -np.radians(45)},
+            MovementType.REVERSE: {"rotation": np.radians(180)},
+            MovementType.REVERSE_LEFT: {"rotation": np.radians(30)},
+            MovementType.REVERSE_RIGHT: {"rotation": -np.radians(30)},
+            MovementType.STOP: {"rotation": 0},
+        }
+
+        # AE regeneration per turn
+        self.ae_regen_per_turn = int(
+            config.ship.ae_regen_per_second * decision_interval
+        )
     
     def resolve_turn(
         self, 
@@ -73,16 +96,16 @@ class PhysicsEngine:
         )
         events.extend(weapon_events_a + weapon_events_b)
         
-        # 3. Simulate 60 seconds with fixed timestep
-        for substep in range(SUBSTEPS):
-            self._update_ship_physics(new_state.ship_a, valid_orders_a, FIXED_TIMESTEP)
-            self._update_ship_physics(new_state.ship_b, valid_orders_b, FIXED_TIMESTEP)
-            
+        # 3. Simulate action phase with fixed timestep
+        for substep in range(self.substeps):
+            self._update_ship_physics(new_state.ship_a, valid_orders_a, self.fixed_timestep)
+            self._update_ship_physics(new_state.ship_b, valid_orders_b, self.fixed_timestep)
+
             for torpedo in new_state.torpedoes:
                 torpedo_orders = valid_orders_a.torpedo_orders.get(torpedo.id) \
                     if torpedo.owner == "ship_a" \
                     else valid_orders_b.torpedo_orders.get(torpedo.id)
-                self._update_torpedo_physics(torpedo, torpedo_orders, FIXED_TIMESTEP)
+                self._update_torpedo_physics(torpedo, torpedo_orders, self.fixed_timestep)
         
         # 4. Check for hits after full action phase
         phaser_events = self._check_phaser_hits(new_state)
@@ -92,8 +115,14 @@ class PhysicsEngine:
         events.extend(torpedo_events)
         
         # 5. Regenerate AE
-        new_state.ship_a.ae = min(new_state.ship_a.ae + 5, 100)
-        new_state.ship_b.ae = min(new_state.ship_b.ae + 5, 100)
+        new_state.ship_a.ae = min(
+            new_state.ship_a.ae + self.ae_regen_per_turn,
+            self.config.ship.max_ae
+        )
+        new_state.ship_b.ae = min(
+            new_state.ship_b.ae + self.ae_regen_per_turn,
+            self.config.ship.max_ae
+        )
         
         # 6. Clear turn-based flags
         for torpedo in new_state.torpedoes:
@@ -114,21 +143,26 @@ class PhysicsEngine:
 
     def _validate_orders(self, ship: ShipState, orders: Orders) -> Orders:
         # Basic validation, can be expanded
-        if MOVEMENT_COSTS.get(orders.movement, 0) > ship.ae:
+        if self.movement_costs.get(orders.movement, 0) > ship.ae:
             orders.movement = MovementType.STOP
         return orders
 
     def _apply_weapon_action(self, state: GameState, ship_id: str, ship: ShipState, weapon_action: str) -> List[Event]:
         events = []
         if weapon_action == "LAUNCH_TORPEDO":
-            if ship.ae >= 20 and len([t for t in state.torpedoes if t.owner == ship_id]) < 4:
-                ship.ae -= 20
+            launch_cost = self.config.torpedo.launch_cost_ae
+            max_torpedoes = self.config.torpedo.max_active_per_ship
+            if ship.ae >= launch_cost and len([t for t in state.torpedoes if t.owner == ship_id]) < max_torpedoes:
+                ship.ae -= launch_cost
                 new_torpedo = TorpedoState(
                     id=f"{ship_id}_torpedo_{state.turn}",
                     position=ship.position,
-                    velocity=Vec2D(np.cos(ship.heading) * TORPEDO_SPEED, np.sin(ship.heading) * TORPEDO_SPEED),
+                    velocity=Vec2D(
+                        np.cos(ship.heading) * self.torpedo_speed,
+                        np.sin(ship.heading) * self.torpedo_speed
+                    ),
                     heading=ship.heading,
-                    ae_remaining=40,
+                    ae_remaining=self.config.torpedo.max_ae_capacity,
                     owner=ship_id,
                     just_launched=True
                 )
@@ -152,18 +186,18 @@ class PhysicsEngine:
         if orders.movement == MovementType.STOP:
             ship.velocity = Vec2D(0, 0)
             return
-        
-        # Rotation happens gradually over 60 seconds
-        rotation_per_dt = MOVEMENT_PARAMS[orders.movement]["rotation"] * dt / ACTION_PHASE_DURATION
+
+        # Rotation happens gradually over action phase duration
+        rotation_per_dt = self.movement_params[orders.movement]["rotation"] * dt / self.action_phase_duration
         ship.heading += rotation_per_dt
         ship.heading = ship.heading % (2 * np.pi)
-        
+
         # Update velocity based on heading
         ship.velocity = Vec2D(
-            np.cos(ship.heading) * SHIP_SPEED,
-            np.sin(ship.heading) * SHIP_SPEED
+            np.cos(ship.heading) * self.ship_speed,
+            np.sin(ship.heading) * self.ship_speed
         )
-        
+
         # Update position
         ship.position = ship.position + (ship.velocity * dt)
 
@@ -171,16 +205,17 @@ class PhysicsEngine:
         if torpedo.just_launched:
             pass # No turning on launch turn
         elif movement:
-            rotation_per_dt = MOVEMENT_PARAMS.get(movement, {"rotation": 0})["rotation"] * dt / ACTION_PHASE_DURATION
+            rotation_per_dt = self.movement_params.get(movement, {"rotation": 0})["rotation"] * dt / self.action_phase_duration
             torpedo.heading += rotation_per_dt
             torpedo.heading = torpedo.heading % (2 * np.pi)
 
         torpedo.velocity = Vec2D(
-            np.cos(torpedo.heading) * TORPEDO_SPEED,
-            np.sin(torpedo.heading) * TORPEDO_SPEED
+            np.cos(torpedo.heading) * self.torpedo_speed,
+            np.sin(torpedo.heading) * self.torpedo_speed
         )
         torpedo.position = torpedo.position + (torpedo.velocity * dt)
-        torpedo.ae_remaining -= 1 * dt # Simplified AE burn
+        # Simplified AE burn (could be more sophisticated based on movement type)
+        torpedo.ae_remaining -= self.config.torpedo.ae_burn_straight_per_second * dt
 
     def _check_phaser_hits(self, state: GameState) -> List[Event]:
         """Check if either ship's phaser hit opponent."""
@@ -203,25 +238,25 @@ class PhysicsEngine:
         return events
     
     def _check_single_phaser_hit(
-        self, 
-        attacker: ShipState, 
-        target: ShipState, 
-        attacker_id: str, 
+        self,
+        attacker: ShipState,
+        target: ShipState,
+        attacker_id: str,
         target_id: str,
         turn: int
     ) -> Optional[Event]:
         """Check if attacker's phaser hits target."""
         distance = attacker.position.distance_to(target.position)
-        
-        # Determine phaser parameters
+
+        # Determine phaser parameters from config
         if attacker.phaser_config == PhaserConfig.WIDE:
-            arc = np.radians(90)
-            max_range = 30
-            damage = 15
+            arc = np.radians(self.config.phaser.wide.arc_degrees)
+            max_range = self.config.phaser.wide.range_units
+            damage = self.config.phaser.wide.damage
         else:  # FOCUSED
-            arc = np.radians(10)
-            max_range = 50
-            damage = 35
+            arc = np.radians(self.config.phaser.focused.arc_degrees)
+            max_range = self.config.phaser.focused.range_units
+            damage = self.config.phaser.focused.damage
         
         # Check range
         if distance > max_range:
@@ -263,8 +298,8 @@ class PhysicsEngine:
             for ship_id, ship in [("ship_a", state.ship_a), ("ship_b", state.ship_b)]:
                 if torpedo.owner != ship_id:
                     distance = torpedo.position.distance_to(ship.position)
-                    if distance < 15: # Blast radius
-                        damage = int(torpedo.ae_remaining * 1.5)
+                    if distance < self.config.torpedo.blast_radius_units:
+                        damage = int(torpedo.ae_remaining * self.config.torpedo.blast_damage_multiplier)
                         ship.shields -= damage
                         events.append(Event(
                             type="torpedo_hit",
