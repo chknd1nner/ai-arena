@@ -1,53 +1,27 @@
-# Story 011: Tactical Validation
+"""
+Story 011: Tactical Validation Tests
 
-**Epic:** [Epic 002: Independent Movement & Rotation System](../epic-002-independent-movement-rotation.md)
-**Status:** Ready for QA
-**Size:** Small
-**Priority:** P1
-
----
-
-## User Story
-
-**As a** game developer
-**I want** to validate that all 4 tactical maneuvers work correctly
-**So that** I know the independent movement/rotation system delivers the promised tactical depth
-
-## Context
-
-This story validates the four key tactical maneuvers described in the game spec:
-1. **Strafing Run** - Move perpendicular while rotating to maintain phaser lock
-2. **Retreat with Coverage** - Move backward while facing forward
-3. **Aggressive Reposition** - Advance while rotating for better firing arc
-4. **The Drift** - Slide laterally while slowly tracking target
-
-These tests verify the entire system works end-to-end for real tactical scenarios.
-
-## Acceptance Criteria
-
-- [ ] Strafing run test verifies ship circles while maintaining facing
-- [ ] Retreat with coverage test verifies backward movement with forward facing
-- [ ] Aggressive reposition test verifies forward movement with rotation
-- [ ] Drift test verifies perpendicular movement with gradual rotation
-- [ ] All maneuvers verified with actual physics simulation
-- [ ] Tests verify position, heading, and velocity after each maneuver
-- [ ] Tests optionally include phaser firing to verify arc coverage
-
-## Test Requirements
-
-**`tests/test_tactical_maneuvers.py` (new file)**
-
-```python
+Tests for the 4 key tactical maneuvers enabled by independent movement/rotation:
+1. Strafing Run - Circle while maintaining gun lock
+2. Retreat with Coverage - Back away while covering
+3. Aggressive Reposition - Advance while angling
+4. The Drift - Evade while tracking
+"""
 import pytest
 import numpy as np
 from ai_arena.game_engine.physics import PhysicsEngine
-from ai_arena.game_engine.data_models import *
-from ai_arena.config.loader import ConfigLoader
+from ai_arena.game_engine.data_models import (
+    GameState, ShipState, Orders, Vec2D,
+    MovementDirection, RotationCommand, PhaserConfig
+)
+from ai_arena.config import ConfigLoader
+
 
 @pytest.fixture
 def engine():
     config = ConfigLoader().load("config.json")
     return PhysicsEngine(config)
+
 
 def test_strafing_run_maneuver(engine):
     """Strafing Run: Move RIGHT while rotating HARD_LEFT.
@@ -76,18 +50,21 @@ def test_strafing_run_maneuver(engine):
             shields=100,
             ae=100,
             phaser_config=PhaserConfig.WIDE
-        )
+        ),
+        torpedoes=[]
     )
 
     orders_a = Orders(
         movement=MovementDirection.RIGHT,    # Move perpendicular right (south)
         rotation=RotationCommand.HARD_LEFT,  # Rotate 45° left (toward north)
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
     orders_b = Orders(
         movement=MovementDirection.STOP,
         rotation=RotationCommand.NONE,
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
 
     new_state, events = engine.resolve_turn(state, orders_a, orders_b)
@@ -103,6 +80,7 @@ def test_strafing_run_maneuver(engine):
     # This is the strafing effect!
     assert new_state.ship_a.heading > initial_heading, "Heading should rotate toward enemy"
     assert new_state.ship_a.position.y < state.ship_a.position.y, "Position should move away"
+
 
 def test_retreat_with_coverage_maneuver(engine):
     """Retreat with Coverage: Move BACKWARD while rotation NONE.
@@ -130,18 +108,21 @@ def test_retreat_with_coverage_maneuver(engine):
             shields=100,
             ae=100,
             phaser_config=PhaserConfig.WIDE
-        )
+        ),
+        torpedoes=[]
     )
 
     orders_a = Orders(
         movement=MovementDirection.BACKWARD,  # Move backward (west)
         rotation=RotationCommand.NONE,        # Maintain heading (east)
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
     orders_b = Orders(
         movement=MovementDirection.STOP,
         rotation=RotationCommand.NONE,
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
 
     new_state, events = engine.resolve_turn(state, orders_a, orders_b)
@@ -156,6 +137,7 @@ def test_retreat_with_coverage_maneuver(engine):
     initial_distance = state.ship_a.position.distance_to(state.ship_b.position)
     final_distance = new_state.ship_a.position.distance_to(new_state.ship_b.position)
     assert final_distance > initial_distance, "Distance from enemy should increase"
+
 
 def test_aggressive_reposition_maneuver(engine):
     """Aggressive Reposition: Move FORWARD while rotating HARD_RIGHT.
@@ -183,18 +165,21 @@ def test_aggressive_reposition_maneuver(engine):
             shields=100,
             ae=100,
             phaser_config=PhaserConfig.WIDE
-        )
+        ),
+        torpedoes=[]
     )
 
     orders_a = Orders(
         movement=MovementDirection.FORWARD,   # Advance forward (east)
         rotation=RotationCommand.HARD_RIGHT,  # Rotate 45° right (southeast)
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
     orders_b = Orders(
         movement=MovementDirection.STOP,
         rotation=RotationCommand.NONE,
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
 
     new_state, events = engine.resolve_turn(state, orders_a, orders_b)
@@ -210,6 +195,7 @@ def test_aggressive_reposition_maneuver(engine):
     initial_distance = state.ship_a.position.distance_to(state.ship_b.position)
     final_distance = new_state.ship_a.position.distance_to(new_state.ship_b.position)
     assert final_distance < initial_distance, "Distance to enemy should decrease"
+
 
 def test_drift_maneuver(engine):
     """The Drift: Move LEFT while rotating SOFT_LEFT.
@@ -237,18 +223,21 @@ def test_drift_maneuver(engine):
             shields=100,
             ae=100,
             phaser_config=PhaserConfig.WIDE
-        )
+        ),
+        torpedoes=[]
     )
 
     orders_a = Orders(
         movement=MovementDirection.LEFT,      # Slide left (north)
         rotation=RotationCommand.SOFT_LEFT,   # Slowly rotate left (15°)
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
     orders_b = Orders(
         movement=MovementDirection.STOP,
         rotation=RotationCommand.NONE,
-        weapon_action="MAINTAIN_CONFIG"
+        weapon_action="MAINTAIN_CONFIG",
+        torpedo_orders={}
     )
 
     new_state, events = engine.resolve_turn(state, orders_a, orders_b)
@@ -267,6 +256,7 @@ def test_drift_maneuver(engine):
     )  # ~45° (northeast)
     # After rotation, heading should be closer to enemy bearing
     assert abs(new_state.ship_a.heading - enemy_bearing) < abs(initial_heading - enemy_bearing)
+
 
 def test_maneuver_ae_consumption():
     """Verify all maneuvers consume AE as expected."""
@@ -298,204 +288,33 @@ def test_maneuver_ae_consumption():
                 shields=100,
                 ae=100,
                 phaser_config=PhaserConfig.WIDE
-            )
+            ),
+            torpedoes=[]
         )
 
-        orders_a = Orders(movement=movement, rotation=rotation, weapon_action="MAINTAIN_CONFIG")
-        orders_b = Orders(movement=MovementDirection.STOP, rotation=RotationCommand.NONE, weapon_action="MAINTAIN_CONFIG")
+        orders_a = Orders(
+            movement=movement,
+            rotation=rotation,
+            weapon_action="MAINTAIN_CONFIG",
+            torpedo_orders={}
+        )
+        orders_b = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG",
+            torpedo_orders={}
+        )
 
         new_state, _ = engine.resolve_turn(state, orders_a, orders_b)
 
         # Calculate expected net AE cost
-        expected_total_cost = expected_rate * 15.0  # 15s action phase
-        expected_regen = 0.33 * 15.0
+        expected_total_cost = expected_rate * config.simulation.decision_interval_seconds
+        expected_regen = config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds
         expected_net = expected_total_cost - expected_regen
 
         actual_cost = 100 - new_state.ship_a.ae
-        assert abs(actual_cost - expected_net) < 1.5, f"{name} maneuver AE cost wrong"
-```
+        assert abs(actual_cost - expected_net) < 1.5, f"{name} maneuver AE cost wrong: expected {expected_net:.1f}, got {actual_cost:.1f}"
 
-## Implementation Checklist
 
-- [ ] Write strafing run test
-- [ ] Write retreat with coverage test
-- [ ] Write aggressive reposition test
-- [ ] Write drift maneuver test
-- [ ] Write AE consumption test for all maneuvers
-- [ ] Verify all tests pass
-- [ ] Optional: Add visualization output for debugging
-
-## Definition of Done
-
-- [ ] All 4 tactical maneuvers validated
-- [ ] Tests verify position, heading, and velocity correctly
-- [ ] Tests verify AE costs for each maneuver
-- [ ] All tests pass
-- [ ] Maneuvers work as specified in game spec
-
-## Files Changed
-
-- Create: `tests/test_tactical_maneuvers.py`
-
-## Dependencies
-
-- **Requires:** Stories 004-007 (physics implementation complete)
-
-## Notes
-
-**Why These Tests Matter:**
-
-These aren't just unit tests - they validate the *entire point* of Epic 002. If these tests pass, we've successfully implemented the "face move" system and unlocked tactical depth.
-
-**Debugging Tips:**
-
-If a maneuver test fails:
-1. Check heading calculation (is rotation working?)
-2. Check velocity direction (is movement working?)
-3. Check AE costs (are both movement + rotation deducted?)
-4. Visualize the trajectory (print positions over time)
-
-**Future Enhancements:**
-
-Consider adding:
-- Phaser hit detection during maneuvers
-- Multi-turn maneuver sequences
-- Enemy response patterns
-- Tournament mode with maneuver statistics
-
----
-
-## Dev Agent Record
-
-**Implementation Date:** 2025-11-14
-**Agent:** Claude (Sonnet 4.5)
-**Session ID:** 019P3Hqu8MWdfVsSCYVsi6jo
-
-### Implementation Summary
-
-Successfully created comprehensive tactical validation test suite to verify all 4 key tactical maneuvers enabled by Epic 002's independent movement/rotation system. All tests pass, confirming the tactical depth promised by the feature.
-
-### Changes Made
-
-**Created:** `tests/test_tactical_maneuvers.py` (new file)
-- Complete test module with 5 test functions
-- Tests validate real-world tactical scenarios
-- Each maneuver test includes:
-  - Position change verification
-  - Heading change verification
-  - Distance/bearing calculations
-  - Comments explaining tactical purpose
-
-### Test Functions Implemented
-
-1. **`test_strafing_run_maneuver()`**
-   - Movement: RIGHT (perpendicular)
-   - Rotation: HARD_LEFT (45°)
-   - Tactical purpose: Circle right around enemy while maintaining gun lock
-   - Verifies: Ship moves south, rotates northeast, creates strafing effect
-
-2. **`test_retreat_with_coverage_maneuver()`**
-   - Movement: BACKWARD (away from enemy)
-   - Rotation: NONE (maintain facing)
-   - Tactical purpose: Create distance while covering retreat
-   - Verifies: Ship moves west, maintains eastward facing, distance increases
-
-3. **`test_aggressive_reposition_maneuver()`**
-   - Movement: FORWARD (toward enemy)
-   - Rotation: HARD_RIGHT (45°)
-   - Tactical purpose: Close distance while angling for advantage
-   - Verifies: Ship moves east, rotates southeast, distance decreases
-
-4. **`test_drift_maneuver()`**
-   - Movement: LEFT (perpendicular)
-   - Rotation: SOFT_LEFT (15°)
-   - Tactical purpose: Evade while gradually tracking target
-   - Verifies: Ship moves north, rotates 15° left, heading approaches enemy bearing
-
-5. **`test_maneuver_ae_consumption()`**
-   - Tests all 4 maneuvers' AE costs
-   - Expected rates:
-     - Strafing: 1.0 AE/s (0.67 move + 0.33 rotate)
-     - Retreat: 0.67 AE/s (0.67 move + 0.0 rotate)
-     - Reposition: 0.66 AE/s (0.33 move + 0.33 rotate)
-     - Drift: 0.80 AE/s (0.67 move + 0.13 rotate)
-   - Verifies: Net AE cost after regeneration is correct
-
-### Test Results
-
-```
-tests/test_tactical_maneuvers.py - 5 tests total
-✅ test_strafing_run_maneuver PASSED
-✅ test_retreat_with_coverage_maneuver PASSED
-✅ test_aggressive_reposition_maneuver PASSED
-✅ test_drift_maneuver PASSED
-✅ test_maneuver_ae_consumption PASSED
-
-Full test suite: 106 tests
-✅ All 106 tests PASSED
-```
-
-### Technical Notes
-
-1. **Coordinate System:**
-   - X increases eastward (right)
-   - Y increases northward (up)
-   - Heading 0 = east, π/2 = north, π = west, 3π/2 = south
-
-2. **Distance Calculations:**
-   - Used `Vec2D.distance_to()` method for position verification
-   - Verified tactical effects (e.g., retreat increases distance, advance decreases)
-
-3. **Bearing Calculations:**
-   - Used `np.arctan2(dy, dx)` for enemy bearing
-   - Verified drift maneuver moves heading closer to enemy bearing
-
-4. **AE Tolerance:**
-   - Used 1.5 AE tolerance for all maneuver tests
-   - Accounts for floating-point precision and substep calculations
-
-### Tactical Validation Success
-
-All 4 maneuvers work exactly as specified:
-
-✅ **Strafing Run** - Circle while maintaining gun lock
-- Ship moves perpendicular to current heading
-- Ship rotates to track enemy
-- Creates circular motion around target
-
-✅ **Retreat with Coverage** - Back away while covering
-- Ship moves backward away from enemy
-- Ship maintains forward-facing heading
-- Distance to enemy increases
-
-✅ **Aggressive Reposition** - Advance while angling
-- Ship moves forward toward enemy
-- Ship rotates for better firing solution
-- Distance to enemy decreases
-
-✅ **The Drift** - Evade while tracking
-- Ship slides perpendicular to heading
-- Ship gradually rotates toward target
-- Balanced evasion + tracking maneuver
-
-### Epic 002 Validation
-
-These tests confirm the entire point of Epic 002: **independent movement and rotation unlocks tactical depth**.
-
-The "face move" system is working correctly:
-- Movement direction is independent of ship heading
-- Rotation changes heading without affecting velocity direction
-- Combined movements create rich tactical possibilities
-- AE costs properly balance maneuver choices
-
-### Ready for QA
-
-All acceptance criteria met:
-- ✅ Strafing run test verifies ship circles while maintaining facing
-- ✅ Retreat with coverage test verifies backward movement with forward facing
-- ✅ Aggressive reposition test verifies forward movement with rotation
-- ✅ Drift test verifies perpendicular movement with gradual rotation
-- ✅ All maneuvers verified with actual physics simulation
-- ✅ Tests verify position, heading, and velocity after each maneuver
-- ✅ AE consumption verified for all maneuvers
-- ✅ All tests pass
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
