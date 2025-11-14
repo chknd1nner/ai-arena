@@ -37,8 +37,8 @@ class ShipConfig:
 class MovementConfig:
     """Movement AE costs per second."""
     forward_ae_per_second: float
-    forward_diagonal_ae_per_second: float
-    lateral_ae_per_second: float
+    diagonal_ae_per_second: float
+    perpendicular_ae_per_second: float
     backward_ae_per_second: float
     backward_diagonal_ae_per_second: float
     stop_ae_per_second: float

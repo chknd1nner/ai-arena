@@ -36,6 +36,7 @@ class Vec2D:
         return (self.x, self.y)
 
 class MovementType(Enum):
+    """Legacy movement type for torpedo orders (still uses coupled system)."""
     STRAIGHT = "STRAIGHT"
     SOFT_LEFT = "SOFT_LEFT"
     SOFT_RIGHT = "SOFT_RIGHT"
@@ -45,6 +46,34 @@ class MovementType(Enum):
     REVERSE_LEFT = "REVERSE_LEFT"
     REVERSE_RIGHT = "REVERSE_RIGHT"
     STOP = "STOP"
+
+class MovementDirection(Enum):
+    """Movement direction relative to current heading.
+
+    Movement sets the velocity direction but does NOT change heading.
+    Combine with RotationCommand for independent facing control.
+    """
+    FORWARD = "FORWARD"               # 0° - Continue straight ahead
+    FORWARD_LEFT = "FORWARD_LEFT"     # -45° - Diagonal left-forward
+    FORWARD_RIGHT = "FORWARD_RIGHT"   # +45° - Diagonal right-forward
+    LEFT = "LEFT"                     # -90° - Perpendicular left
+    RIGHT = "RIGHT"                   # +90° - Perpendicular right
+    BACKWARD = "BACKWARD"             # 180° - Reverse direction
+    BACKWARD_LEFT = "BACKWARD_LEFT"   # -135° - Diagonal left-backward
+    BACKWARD_RIGHT = "BACKWARD_RIGHT" # +135° - Diagonal right-backward
+    STOP = "STOP"                     # 0 velocity - Coast to halt
+
+class RotationCommand(Enum):
+    """Ship rotation command independent of movement.
+
+    Rotation changes heading but does NOT change velocity direction.
+    Phasers always point in heading direction.
+    """
+    NONE = "NONE"               # 0.0°/s - Maintain current heading
+    SOFT_LEFT = "SOFT_LEFT"     # +1.0°/s - Gentle left rotation
+    SOFT_RIGHT = "SOFT_RIGHT"   # -1.0°/s - Gentle right rotation
+    HARD_LEFT = "HARD_LEFT"     # +3.0°/s - Aggressive left rotation
+    HARD_RIGHT = "HARD_RIGHT"   # -3.0°/s - Aggressive right rotation
 
 class PhaserConfig(Enum):
     WIDE = "WIDE"
@@ -82,8 +111,14 @@ class GameState:
 
 @dataclass
 class Orders:
-    """Commands from LLM for one ship."""
-    movement: MovementType
+    """Commands from LLM for one ship.
+
+    Movement and rotation are independent:
+    - movement: Sets velocity direction relative to heading
+    - rotation: Changes heading independent of velocity
+    """
+    movement: MovementDirection      # Changed from MovementType
+    rotation: RotationCommand        # NEW: Independent rotation
     weapon_action: str
     torpedo_orders: Dict[str, MovementType] = field(default_factory=dict)
 
