@@ -28,13 +28,40 @@ cp .env.example .env
 # Edit .env and add your API keys
 ```
 
-### Running the Backend
+### Running the Application
 
+**Backend (Python 3.11+):**
 ```bash
-python main.py
+# On macOS, use python3 explicitly
+python3 main.py
 ```
 
-The server will start on `http://localhost:8000`.
+The backend API will start on `http://localhost:8000`.
+
+**Frontend (React):**
+```bash
+# IMPORTANT: Must run from frontend/ directory
+cd frontend
+npm install  # First time only
+npm start    # Runs on http://localhost:3000
+```
+
+**Both Servers (for full app):**
+
+Open two terminal windows:
+
+Terminal 1:
+```bash
+python3 main.py
+```
+
+Terminal 2:
+```bash
+cd frontend
+npm start
+```
+
+Then visit `http://localhost:3000` in your browser.
 
 ### API Usage
 
@@ -74,10 +101,15 @@ ai-arena/
 │   ├── orchestrator/      # Match coordination
 │   ├── replay/            # Match recording and loading
 │   └── web_server/        # FastAPI REST API
+├── frontend/              # React frontend (MUST cd here to run npm)
+│   ├── src/
+│   │   ├── components/    # React components (CanvasRenderer, etc.)
+│   │   └── utils/         # Utilities (coordinate transforms)
+│   └── package.json
 ├── docs/                  # Architecture and game spec
 ├── replays/               # Saved match replays (JSON)
 ├── config.json            # Game balance parameters
-├── main.py                # Application entry point
+├── main.py                # Backend entry point
 └── requirements.txt       # Python dependencies
 ```
 
