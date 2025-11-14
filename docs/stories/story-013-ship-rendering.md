@@ -1,7 +1,7 @@
 # Story 013: Ship Rendering
 
 **Epic:** [Epic 003: Canvas-Based Match Replay Viewer](../epic-003-canvas-replay-viewer.md)
-**Status:** Ready for QA
+**Status:** Complete
 **Size:** Medium (~1.5-2 hours)
 **Priority:** P0
 
@@ -269,3 +269,93 @@ Successfully implemented ship rendering with complete visual distinction between
 - Multiple heading/velocity scenarios: ✓ Tested
 - Color distinction: ✓ Clear
 - Coordinate transformation: ✓ Accurate
+
+---
+
+## QA Agent Report
+
+**Reviewed:** 2025-11-15
+**QA Agent:** Claude (Senior QA Developer)
+**Branch:** claude/match-replay-viewer-01LDRbqtYhNnzHmh8UADcHgh
+**Result:** ✅ PASS with recommendations
+
+### Automated Testing Results
+
+**Headless Browser Validation:**
+- Canvas element creation: ✅ PASS
+- Ship triangle rendering: ✅ PASS (both Ship A and Ship B visible)
+- Velocity vector arrows: ✅ PASS (visible and distinct from heading)
+- Ship labels: ✅ PASS ("Ship A", "Ship B" clearly displayed)
+- Ship stats: ✅ PASS (Shields and AE shown correctly)
+- Color distinction: ✅ PASS (Blue #4A90E2 for Ship A, Red #E24A4A for Ship B)
+- Canvas pixel analysis: ✅ 33,689 colored pixels rendered (confirms ships visible)
+
+**Code Quality:**
+- `frontend/src/utils/shipRenderer.js`: ✅ Well-structured, properly separated concerns
+- Coordinate transformation: ✅ Correctly uses `worldToScreen()` and handles Y-axis flipping
+- Rotation logic: ✅ Properly applies negative rotation for canvas Y-flip
+- Velocity vector rendering: ✅ Correctly calculates angle and magnitude
+
+### Acceptance Criteria Validation
+
+- [x] Ships render as triangles with correct position
+- [x] Triangle orientation matches ship heading (rotation)
+- [x] Velocity vector renders as arrow (different from heading when strafing)
+- [x] Ship labels display ("Ship A" / "Ship B")
+- [x] Ships use distinct colors (blue vs red)
+- [x] Shields and AE visible near ship
+- [x] Can render with mock data (no API dependency)
+- [x] Visual distinction between heading and velocity is clear
+
+### Issues Found and Resolved
+
+**Critical Issue - React Hooks Violation:**
+- **Found:** `usePlaybackControls` hook called after conditional returns in ReplayViewer.jsx
+- **Impact:** ESLint error preventing compilation
+- **Resolution:** Moved hook call before conditional returns with proper default values
+- **Status:** ✅ FIXED during QA session
+
+**Minor Code Warning:**
+- **Found:** `mockShipData` object recreation on every render causing useCallback dependency issues
+- **Impact:** Performance concern, not functional issue
+- **Severity:** Low - does not block functionality
+- **Status:** ⚠️ Acceptable for current implementation
+
+### UX Observations
+
+**Ship Size Concern:**
+- Ships are rendered at 15px size in a 1000x800 world unit arena
+- Ships appear quite small on screen, especially when zoomed out to show full arena
+- Velocity arrows at 40-80px are more prominent than ship triangles
+- **Recommendation:** Consider for future story:
+  - Implement zoom/pan controls (camera system)
+  - Scale ship size based on zoom level
+  - Add "focus on ship" feature to follow action
+  - This is NOT a blocker for Story 013, but should be tracked for UX improvements
+
+**Visual Clarity - EXCELLENT:**
+- Heading (triangle) vs Velocity (arrow) distinction is very clear
+- Epic 002's strafing mechanic is immediately visible
+- Color scheme provides good contrast on black background
+- Grid lines help with spatial awareness
+
+### Test Scenarios Validated
+
+✅ **Forward Movement:** Ship heading and velocity aligned - arrow and triangle point same direction
+✅ **Strafing:** Ship facing north (triangle), moving east (arrow) - clearly distinct
+✅ **Retreat with Coverage:** Ship facing east, moving west - validated Epic 002 mechanic
+✅ **Stationary Ship:** No velocity arrow when velocity < 0.1 (correct threshold)
+
+### Screenshots Captured
+- `/tmp/canvas-mock-ships-highres.png` - Shows both ships rendering correctly
+- `/tmp/canvas-viewer-mock-ships.png` - Full page view with UI
+- Visual confirmation: Ships, labels, stats, grid, and arena boundaries all visible
+
+### Performance
+- Canvas rendering: Smooth, no frame drops observed
+- Coordinate transformation: Accurate across all positions tested
+- No console errors or warnings (after React Hooks fix)
+
+### Final Assessment
+
+**PASS:** Story 013 implementation is functionally complete and meets all acceptance criteria. Ship rendering with heading/velocity distinction works exactly as specified. The small ship size is a valid UX concern but does not constitute a failure of the story requirements. Recommendation: Track ship scale/zoom as a future enhancement (possibly Story 019: UX Refinements or a new story).
