@@ -1,9 +1,101 @@
 # Story 009: LLM Order Parsing
 
 **Epic:** [Epic 002: Independent Movement & Rotation System](../epic-002-independent-movement-rotation.md)
-**Status:** Complete
+**Status:** ❌ FAIL - Blocked by Pre-existing Test Failures
 **Size:** Medium
 **Priority:** P0
+
+---
+
+## QA Agent Review
+
+**Reviewed By:** task-completion-validator
+**Date:** 2025-11-14
+**Verdict:** ❌ CONDITIONAL REJECT - Implementation Complete, But PR Blocked by Pre-existing Issues
+
+**Implementation Verified:**
+- ✅ Parses `ship_movement` field correctly (adapter.py:293-298)
+- ✅ Parses `ship_rotation` field correctly (adapter.py:301-306)
+- ✅ Converts movement strings to `MovementDirection` enum (adapter.py:295)
+- ✅ Converts rotation strings to `RotationCommand` enum (adapter.py:303)
+- ✅ Handles invalid movement values (defaults to STOP) (adapter.py:296-298)
+- ✅ Handles invalid rotation values (defaults to NONE) (adapter.py:304-306)
+- ✅ Handles missing fields gracefully (adapter.py:293, 301 - .get() with defaults)
+- ✅ Logs parsing errors for debugging (adapter.py:297, 305, 329-330, 333)
+- ✅ Updated default orders to include rotation field (adapter.py:336-343)
+- ✅ Tests verify parsing for all valid combinations (test_llm_adapter.py:115-289)
+
+**Test Results:** 19/19 LLM adapter tests passing ✓
+- All Story 008 tests passing (6/6)
+- All Story 009 tests passing (13/13)
+- All Epic 002 Phase 1 tests passing (39/39)
+- All updated integration tests passing (13/13)
+
+**Overall Test Suite:** 88/93 tests passing
+- ❌ **5 pre-existing config validation test failures** (NOT caused by this PR)
+
+**Quality Assessment:**
+- Excellent error handling with graceful degradation
+- Comprehensive logging strategy (warnings for expected errors, errors for unexpected)
+- Case-insensitive parsing via `.upper()`
+- All 9 movement directions × 5 rotation commands tested
+- Edge cases well covered (missing fields, invalid values, malformed JSON)
+
+**Code References:**
+- ai_arena/llm_adapter/adapter.py:272-343 - Complete parsing implementation
+- tests/test_llm_adapter.py:115-318 - Comprehensive parsing tests
+- tests/test_physics.py:6-93 - Updated to use new Orders structure
+- tests/test_config_integration.py:10-13 + multiple - Updated to use new Orders structure
+
+**VALIDATION STATUS:** ❌ CONDITIONAL REJECT
+
+**CRITICAL ISSUES:**
+1. **SEVERITY: High | BLOCKER: Yes** - 5 config validation tests failing from Phase 1
+   - Location: tests/test_config.py:273, 288, 386, 397, 409
+   - Root Cause: Test fixtures use outdated MovementConfig field names from before Epic 002 Phase 1
+   - Fields used in tests: `forward_diagonal_ae_per_second`, `lateral_ae_per_second`
+   - Actual MovementConfig fields: `diagonal_ae_per_second`, `perpendicular_ae_per_second`
+   - Files affected:
+     - tests/test_config.py inline configs (lines 311-312)
+     - tests/fixtures/invalid_negative_values.json (likely)
+     - tests/fixtures/invalid_range_violations.json (likely)
+   - Impact: Test suite not passing - PR cannot be merged
+   - NOT caused by Phase 2 work - pre-existing from Phase 1
+
+**MISSING COMPONENTS:**
+1. **Config test fixture updates** - Required to fix pre-existing failures
+   - Update inline test configs in test_config.py
+   - Update JSON fixtures in tests/fixtures/ directory
+   - Change `forward_diagonal_ae_per_second` → `diagonal_ae_per_second`
+   - Change `lateral_ae_per_second` → `perpendicular_ae_per_second`
+
+**QUALITY CONCERNS:**
+- None for Phase 2 implementation itself
+- Phase 1 should have updated all test fixtures when MovementConfig structure changed
+
+**RECOMMENDATION:**
+
+**For Phase 2 work (Stories 008-009):** ✅ APPROVED - Implementation is excellent and complete
+
+**For PR merge:** ❌ MUST FIX PRE-EXISTING FAILURES FIRST
+
+**Required Actions:**
+1. Fix config test fixtures (from Phase 1 technical debt):
+   - Update tests/test_config.py inline configs (lines ~309-315)
+   - Update tests/fixtures/invalid_negative_values.json
+   - Update tests/fixtures/invalid_range_violations.json
+   - Ensure all 5 failing tests pass
+2. Re-run full test suite to confirm 93/93 tests passing
+3. Then PR can be merged
+
+**Guidance for Dev Agent:**
+The LLM adapter implementation (Stories 008-009) is **excellent** and **fully complete**. However, there are pre-existing test failures from Epic 002 Phase 1 that must be fixed before this PR can merge. These failures are NOT your fault - they should have been caught and fixed in Phase 1.
+
+To fix:
+1. Update the `movement` section in inline test configs to use correct field names
+2. Check and update JSON fixtures in tests/fixtures/
+3. Run: `python3 -m pytest tests/test_config.py::TestConfigValidation -v` to verify fixes
+4. Ensure full test suite passes before resubmitting
 
 ---
 
