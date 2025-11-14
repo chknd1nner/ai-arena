@@ -3,7 +3,10 @@ Tests for physics engine.
 """
 import pytest
 from ai_arena.game_engine.physics import PhysicsEngine
-from ai_arena.game_engine.data_models import GameState, ShipState, Orders, Vec2D, MovementType, PhaserConfig
+from ai_arena.game_engine.data_models import (
+    GameState, ShipState, Orders, Vec2D, MovementType,
+    MovementDirection, RotationCommand, PhaserConfig
+)
 from ai_arena.config import ConfigLoader
 
 
@@ -32,7 +35,7 @@ def test_ship_movement_straight(engine, config):
     )
 
     state = GameState(turn=0, ship_a=ship, ship_b=ship, torpedoes=[])
-    orders = Orders(movement=MovementType.STRAIGHT, weapon_action="NONE", torpedo_orders={})
+    orders = Orders(movement=MovementDirection.FORWARD, rotation=RotationCommand.NONE, weapon_action="NONE", torpedo_orders={})
 
     new_state, events = engine.resolve_turn(state, orders, orders)
 
@@ -68,7 +71,7 @@ def test_phaser_hit_detection(engine, config):
     )
 
     state = GameState(turn=0, ship_a=ship_a, ship_b=ship_b, torpedoes=[])
-    orders = Orders(movement=MovementType.STOP, weapon_action="NONE", torpedo_orders={})
+    orders = Orders(movement=MovementDirection.STOP, rotation=RotationCommand.NONE, weapon_action="NONE", torpedo_orders={})
 
     new_state, events = engine.resolve_turn(state, orders, orders)
 
@@ -89,8 +92,8 @@ def test_torpedo_launch(engine, config):
     )
 
     state = GameState(turn=0, ship_a=ship, ship_b=ship, torpedoes=[])
-    orders_a = Orders(movement=MovementType.STOP, weapon_action="LAUNCH_TORPEDO", torpedo_orders={})
-    orders_b = Orders(movement=MovementType.STOP, weapon_action="NONE", torpedo_orders={})
+    orders_a = Orders(movement=MovementDirection.STOP, rotation=RotationCommand.NONE, weapon_action="LAUNCH_TORPEDO", torpedo_orders={})
+    orders_b = Orders(movement=MovementDirection.STOP, rotation=RotationCommand.NONE, weapon_action="NONE", torpedo_orders={})
 
     new_state, events = engine.resolve_turn(state, orders_a, orders_b)
 
