@@ -7,6 +7,18 @@ import PlaybackControls from './PlaybackControls';
 const ReplayViewer = ({ matchId }) => {
   const { replay, loading, error } = useReplayData(matchId);
 
+  // Initialize playback controls hook BEFORE conditional returns
+  // Use 1 as default to avoid errors when replay is not loaded
+  const totalTurns = replay?.turns?.length || 1;
+  const {
+    playing,
+    speed,
+    currentTurn: currentTurnIndex,
+    togglePlayPause,
+    changeSpeed,
+    jumpToTurn
+  } = usePlaybackControls(totalTurns);
+
   // Handle loading state
   if (loading) {
     return (
@@ -33,17 +45,6 @@ const ReplayViewer = ({ matchId }) => {
       </div>
     );
   }
-
-  // Use playback controls hook
-  const totalTurns = replay.turns.length;
-  const {
-    playing,
-    speed,
-    currentTurn: currentTurnIndex,
-    togglePlayPause,
-    changeSpeed,
-    jumpToTurn
-  } = usePlaybackControls(totalTurns);
 
   const currentTurn = replay.turns[currentTurnIndex];
 
