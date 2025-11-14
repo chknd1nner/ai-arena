@@ -83,7 +83,7 @@ function renderTorpedo(ctx, torpedo, canvasSize, worldBounds) {
 
 **Completed:** 2025-11-14
 **Agent:** Claude (Dev Agent)
-**Commit:** [Will be filled after commit]
+**Commit:** 95190d7f0dc94b3a577d63a537005c5fd8728309
 
 ### Implementation Notes
 
