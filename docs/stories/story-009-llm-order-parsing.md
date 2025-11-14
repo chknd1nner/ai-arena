@@ -1,7 +1,7 @@
 # Story 009: LLM Order Parsing
 
 **Epic:** [Epic 002: Independent Movement & Rotation System](../epic-002-independent-movement-rotation.md)
-**Status:** Ready for Development
+**Status:** Complete
 **Size:** Medium
 **Priority:** P0
 

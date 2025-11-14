@@ -1,7 +1,7 @@
 # Story 008: LLM Prompt Engineering
 
 **Epic:** [Epic 002: Independent Movement & Rotation System](../epic-002-independent-movement-rotation.md)
-**Status:** Ready for Development
+**Status:** Complete
 **Size:** Medium
 **Priority:** P0
 

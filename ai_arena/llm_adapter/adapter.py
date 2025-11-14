@@ -4,9 +4,15 @@ import json
 import asyncio
 import numpy as np
 import os
+import logging
 from dotenv import load_dotenv
 
-from ai_arena.game_engine.data_models import GameState, Orders, MovementType, ShipState, Vec2D, PhaserConfig
+logger = logging.getLogger(__name__)
+
+from ai_arena.game_engine.data_models import (
+    GameState, Orders, MovementType, MovementDirection, RotationCommand,
+    ShipState, Vec2D, PhaserConfig
+)
 
 load_dotenv()
 
@@ -98,9 +104,112 @@ class LLMAdapter:
         our_torpedoes = [t for t in state.torpedoes if t.owner == ship_id]
         enemy_torpedoes = [t for t in state.torpedoes if t.owner != ship_id]
         
-        system_prompt = """You are piloting a starship in 1v1 combat.
+        system_prompt = """You are an AI pilot controlling a starship in a tactical 1v1 space duel.
 
-WEAPONS:
+## MOVEMENT & ROTATION SYSTEM
+
+Your ship has TWO independent control systems:
+
+1. **MOVEMENT DIRECTION** - Controls velocity (where you move)
+2. **ROTATION COMMAND** - Controls heading (where you face)
+
+These are INDEPENDENT. You can move in one direction while facing another direction.
+
+### MOVEMENT DIRECTIONS (Velocity Control)
+
+Movement sets your velocity direction relative to your current heading:
+
+| Direction | Description | Angle | AE/Second | Total (15s) |
+|-----------|-------------|-------|-----------|-------------|
+| FORWARD | Continue straight ahead | 0° | 0.33 | 5.0 |
+| FORWARD_LEFT | Diagonal left-forward | -45° | 0.53 | 8.0 |
+| FORWARD_RIGHT | Diagonal right-forward | +45° | 0.53 | 8.0 |
+| LEFT | Perpendicular left | -90° | 0.67 | 10.0 |
+| RIGHT | Perpendicular right | +90° | 0.67 | 10.0 |
+| BACKWARD | Reverse direction | 180° | 0.67 | 10.0 |
+| BACKWARD_LEFT | Diagonal left-backward | -135° | 0.80 | 12.0 |
+| BACKWARD_RIGHT | Diagonal right-backward | +135° | 0.80 | 12.0 |
+| STOP | Coast to halt | N/A | 0.0 | 0.0 |
+
+**Movement sets velocity direction but does NOT change heading.**
+
+### ROTATION COMMANDS (Heading Control)
+
+Rotation changes where your ship faces (and where phasers point):
+
+| Rotation | Description | Rate | Total (15s) | AE/Second | Total (15s) |
+|----------|-------------|------|-------------|-----------|-------------|
+| NONE | Maintain current heading | 0°/s | 0° | 0.0 | 0.0 |
+| SOFT_LEFT | Gentle left rotation | 1°/s | 15° | 0.13 | 2.0 |
+| SOFT_RIGHT | Gentle right rotation | 1°/s | 15° | 0.13 | 2.0 |
+| HARD_LEFT | Aggressive left rotation | 3°/s | 45° | 0.33 | 5.0 |
+| HARD_RIGHT | Aggressive right rotation | 3°/s | 45° | 0.33 | 5.0 |
+
+**Rotation changes heading but does NOT change velocity direction.**
+
+### COMBINED AE COST
+
+Total AE cost = Movement cost + Rotation cost
+
+Examples:
+- FORWARD + NONE = 0.33 + 0.0 = 0.33 AE/s
+- FORWARD + HARD_LEFT = 0.33 + 0.33 = 0.66 AE/s
+- LEFT + HARD_RIGHT = 0.67 + 0.33 = 1.0 AE/s
+
+Your ship regenerates 0.33 AE/s, so net burn = total cost - 0.33 AE/s.
+
+### TACTICAL MANEUVERS
+
+**1. Strafing Run (Evasive Fire)**
+```
+Movement: RIGHT (move perpendicular right)
+Rotation: HARD_LEFT (rotate to face left)
+Result: Circle right around enemy while keeping phasers pointed at them
+Cost: 0.67 + 0.33 = 1.0 AE/s (net drain: 0.67 AE/s)
+Use when: Evading while maintaining firing solution
+```
+
+**2. Retreat with Coverage (Defensive Withdrawal)**
+```
+Movement: BACKWARD (reverse away)
+Rotation: NONE (keep facing forward)
+Result: Back away while phasers still point at enemy
+Cost: 0.67 + 0.0 = 0.67 AE/s (net drain: 0.34 AE/s)
+Use when: Low shields, need to create distance while covering
+```
+
+**3. Aggressive Reposition (Flanking)**
+```
+Movement: FORWARD (advance straight)
+Rotation: HARD_RIGHT (rotate 45° right)
+Result: Close distance while angling for better firing arc
+Cost: 0.33 + 0.33 = 0.66 AE/s (net drain: 0.33 AE/s)
+Use when: Maneuvering for tactical advantage
+```
+
+**4. The Drift (Tracking Evasion)**
+```
+Movement: LEFT (slide left)
+Rotation: SOFT_LEFT (slowly rotate left)
+Result: Slide laterally while gradually tracking enemy movement
+Cost: 0.67 + 0.13 = 0.80 AE/s (net drain: 0.47 AE/s)
+Use when: Evading while maintaining partial firing solution
+```
+
+### PHASERS & HEADING
+
+**CRITICAL:** Phasers always point in your HEADING direction, not your movement direction.
+
+Example:
+- You're facing East (heading = 0°)
+- You move LEFT (velocity = North)
+- Your phasers fire EAST (heading direction)
+- You're moving north but shooting east
+
+This is why rotation matters - it controls where you shoot!
+
+## WEAPONS
+
 - Phasers: Fire automatically if enemy in arc
   - WIDE: 90° arc, 30 range, 15 damage
   - FOCUSED: 10° arc, 50 range, 35 damage
@@ -110,22 +219,25 @@ WEAPONS:
   - Damage = (AE remaining) × 1.5
   - Blast radius: 15 units
 
-MOVEMENT (AE cost):
-- STRAIGHT (5) - Continue heading
-- SOFT_LEFT/RIGHT (7) - 15° turn
-- HARD_LEFT/RIGHT (10) - 45° turn
-- REVERSE (8) - 180° turn
-- STOP (0) - No movement
+## JSON RESPONSE FORMAT
 
-RESPOND WITH JSON ONLY, matching this exact format:
+You must respond with valid JSON in this exact format:
+
+```json
 {
-  "thinking": "Your reasoning for your chosen actions. Analyze the situation and explain your strategy in 2-3 sentences.",
-  "movement": "STRAIGHT",
-  "weapon": "NONE",
-  "torpedo_controls": {
-    "your_torpedo_id_1": "STRAIGHT"
-  }
-}"""
+  "thinking": "Describe your tactical reasoning here",
+  "ship_movement": "FORWARD|LEFT|RIGHT|BACKWARD|FORWARD_LEFT|FORWARD_RIGHT|BACKWARD_LEFT|BACKWARD_RIGHT|STOP",
+  "ship_rotation": "NONE|SOFT_LEFT|SOFT_RIGHT|HARD_LEFT|HARD_RIGHT",
+  "weapon_action": "MAINTAIN_CONFIG|RECONFIGURE_WIDE|RECONFIGURE_FOCUSED|LAUNCH_TORPEDO",
+  "torpedo_orders": {}
+}
+```
+
+**Required fields:**
+- `ship_movement`: One of the 9 movement directions
+- `ship_rotation`: One of the 5 rotation commands
+- `weapon_action`: Weapon command
+- `thinking`: Your tactical reasoning"""
         
         user_prompt = f"""TURN {state.turn}
 
@@ -158,50 +270,74 @@ YOUR TORPEDOES ({len(our_torpedoes)}/4):"""
         ]
     
     def _parse_orders(
-        self, 
-        response_text: str, 
-        state: GameState, 
+        self,
+        response_text: str,
+        state: GameState,
         ship_id: str
     ) -> Tuple[Orders, str]:
-        """Parse LLM response into Orders object."""
+        """Parse LLM response into Orders object.
+
+        Args:
+            response_text: Raw JSON string from LLM
+            state: Current game state
+            ship_id: "ship_a" or "ship_b" for error logging
+
+        Returns:
+            Tuple of (Orders object, thinking string)
+        """
         try:
             parsed = json.loads(response_text)
             thinking = parsed.get("thinking", "No reasoning provided.")
-            
-            # Extract and validate movement
-            movement_str = parsed.get("movement", "STOP").upper()
+
+            # Parse movement direction (NEW)
+            movement_str = parsed.get("ship_movement", "STOP").upper()
             try:
-                movement = MovementType[movement_str]
+                movement = MovementDirection[movement_str]
             except KeyError:
-                print(f"Invalid movement '{movement_str}', using STOP")
-                movement = MovementType.STOP
-            
+                logger.warning(f"{ship_id} invalid movement '{movement_str}', defaulting to STOP")
+                movement = MovementDirection.STOP
+
+            # Parse rotation command (NEW)
+            rotation_str = parsed.get("ship_rotation", "NONE").upper()
+            try:
+                rotation = RotationCommand[rotation_str]
+            except KeyError:
+                logger.warning(f"{ship_id} invalid rotation '{rotation_str}', defaulting to NONE")
+                rotation = RotationCommand.NONE
+
             # Extract weapon action
-            weapon = parsed.get("weapon", "NONE").upper()
-            
-            # Extract torpedo controls
+            weapon_action = parsed.get("weapon_action", "MAINTAIN_CONFIG")
+
+            # Extract torpedo controls (still uses MovementType)
             torpedo_orders = {}
-            if "torpedo_controls" in parsed:
-                for tid, move in parsed["torpedo_controls"].items():
+            if "torpedo_orders" in parsed:
+                for tid, move in parsed["torpedo_orders"].items():
                     try:
                         torpedo_orders[tid] = MovementType[move.upper()]
                     except KeyError:
+                        logger.warning(f"{ship_id} invalid torpedo movement '{move}', defaulting to STRAIGHT")
                         torpedo_orders[tid] = MovementType.STRAIGHT
-            
-            return Orders(movement, weapon, torpedo_orders), thinking
-            
+
+            return Orders(
+                movement=movement,
+                rotation=rotation,
+                weapon_action=weapon_action,
+                torpedo_orders=torpedo_orders
+            ), thinking
+
         except json.JSONDecodeError as e:
-            print(f"JSON parse error: {e}")
-            print(f"Response: {response_text[:200]}")
+            logger.error(f"{ship_id} JSON parse error: {e}")
+            logger.error(f"Response: {response_text[:200]}")
             return self._default_orders(), "JSON PARSE ERROR"
         except Exception as e:
-            print(f"Unexpected parse error: {e}")
+            logger.error(f"{ship_id} unexpected parse error: {e}")
             return self._default_orders(), "UNEXPECTED PARSE ERROR"
     
     def _default_orders(self) -> Orders:
         """Safe default orders when parsing fails."""
         return Orders(
-            movement=MovementType.STOP,
-            weapon_action="NONE",
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG",
             torpedo_orders={}
         )
