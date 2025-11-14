@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import CanvasRenderer from './components/CanvasRenderer';
+import ReplayViewer from './components/ReplayViewer';
 
 function App() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
+  const [selectedReplay, setSelectedReplay] = useState(null);
 
   useEffect(() => {
     fetchMatches();
@@ -66,9 +68,78 @@ function App() {
           </button>
         </section>
 
-        {showViewer && (
+        {/* Test Replay Buttons */}
+        <section style={{ marginTop: '20px', padding: '15px', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
+          <h3 style={{ color: '#fff', marginTop: 0 }}>Load Test Replays:</h3>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setSelectedReplay('test_strafing_maneuver')}
+              style={{
+                padding: '10px 15px',
+                backgroundColor: selectedReplay === 'test_strafing_maneuver' ? '#4A90E2' : '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Watch Strafing Maneuver
+            </button>
+            <button
+              onClick={() => setSelectedReplay('test_retreat_coverage')}
+              style={{
+                padding: '10px 15px',
+                backgroundColor: selectedReplay === 'test_retreat_coverage' ? '#4A90E2' : '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Watch Retreat Coverage
+            </button>
+            <button
+              onClick={() => setSelectedReplay('test_epic002_tactical_showcase')}
+              style={{
+                padding: '10px 15px',
+                backgroundColor: selectedReplay === 'test_epic002_tactical_showcase' ? '#4A90E2' : '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Watch Tactical Showcase
+            </button>
+            {selectedReplay && (
+              <button
+                onClick={() => setSelectedReplay(null)}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#E24A4A',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Close Replay
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* Replay Viewer */}
+        {selectedReplay && (
           <section style={{ marginTop: '20px' }}>
-            <h2>Canvas Replay Viewer</h2>
+            <ReplayViewer matchId={selectedReplay} />
+          </section>
+        )}
+
+        {/* Canvas Viewer (mock data) */}
+        {showViewer && !selectedReplay && (
+          <section style={{ marginTop: '20px' }}>
+            <h2>Canvas Viewer (Mock Data)</h2>
             <CanvasRenderer width={1200} height={800} />
           </section>
         )}
