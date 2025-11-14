@@ -165,8 +165,8 @@ class TestConfigLoader:
             },
             "movement": {
                 "forward_ae_per_second": 0.33,
-                "forward_diagonal_ae_per_second": 0.53,
-                "lateral_ae_per_second": 0.67,
+                "diagonal_ae_per_second": 0.53,
+                "perpendicular_ae_per_second": 0.67,
                 "backward_ae_per_second": 0.67,
                 "backward_diagonal_ae_per_second": 0.80,
                 "stop_ae_per_second": 0.0
@@ -308,8 +308,8 @@ class TestConfigValidation:
             },
             "movement": {
                 "forward_ae_per_second": 0.33,
-                "forward_diagonal_ae_per_second": 0.53,
-                "lateral_ae_per_second": 0.67,
+                "diagonal_ae_per_second": 0.53,
+                "perpendicular_ae_per_second": 0.67,
                 "backward_ae_per_second": 0.67,
                 "backward_diagonal_ae_per_second": 0.80,
                 "stop_ae_per_second": 0.0
