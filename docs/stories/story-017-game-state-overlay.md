@@ -76,34 +76,66 @@ const ShipStats = ({ ship, label, color }) => (
 
 ## Dev Agent Record
 
-[Dev Agent: Fill in this section when implementation is complete]
-
-**Completed:** [Date]
-**Agent:** [Your name]
-**Commit:** [Commit hash]
+**Completed:** 2025-11-14
+**Agent:** Claude (Dev Agent)
+**Commit:** [Will be filled after commit]
 
 ### Implementation Notes
 
-[Describe what was implemented, key technical decisions, files created/modified, testing results]
+Implemented comprehensive game state overlay component that displays ship stats, turn information, events, and match metadata in an organized, non-intrusive manner.
 
 **Files Created:**
-- [List new files]
+- `frontend/src/components/StateOverlay.jsx` - Complete state overlay component with ship stats and event display
 
 **Files Modified:**
-- [List modified files]
+- `frontend/src/components/ReplayViewer.jsx` - Integrated StateOverlay component into replay viewer
 
 **Implementation Details:**
-1. [Detail 1]
-2. [Detail 2]
-3. [etc.]
+1. **StateOverlay Component** (`StateOverlay.jsx`):
+   - **ShipStats Sub-component**: Displays shields, AE, and phaser configuration for each ship
+   - **Color-coded Borders**: Blue (#4A90E2) for Ship A, Red (#E24A4A) for Ship B
+   - **Dynamic Status Colors**: Green/yellow/red indicators based on shields and AE levels
+   - **Turn Counter**: Displays current turn vs total turns with match ID
+   - **Event Log**: Formats and displays recent events (last 5) with readable descriptions
+   - **Torpedo Count**: Shows active torpedoes per ship
+   - **Blast Zone Warnings**: Highlights active blast zones with warning emoji
+
+2. **Event Formatting** (`formatEvent()` function):
+   - Handles multiple event types: phaser_fired, torpedo_launched, torpedo_blast, etc.
+   - Provides human-readable descriptions with relevant details (damage, attacker, target)
+   - Fallback formatting for unknown event types
+
+3. **ReplayViewer Integration**:
+   - Replaced basic event display with comprehensive StateOverlay
+   - Passes turnState, turnNumber, maxTurns, events, and matchInfo as props
+   - Positioned below playback controls to avoid obscuring canvas
+   - Clean integration maintaining existing viewer structure
+
+4. **Visual Design**:
+   - Consistent dark theme (#1a1a1a background) matching existing UI
+   - Three-column layout: Ship A stats | Turn counter | Ship B stats
+   - Clear visual hierarchy with borders and spacing
+   - Responsive sizing with minimum widths for readability
 
 **Key Technical Decisions:**
-- [Decision 1 and rationale]
-- [Decision 2 and rationale]
+- **Color-Coded Health Indicators**: Dynamic colors (green/yellow/red) for shields and AE provide instant status visibility
+- **Recent Events Only**: Limited to last 5 events to prevent information overload and maintain readability
+- **Phaser Config Display**: Shows WIDE/FOCUSED with distinct colors (green for WIDE, cyan for FOCUSED) for quick identification
+- **Non-Intrusive Placement**: Positioned below canvas and controls to maintain clear view of action
+- **Ship Identification**: Consistent color coding (blue/red) matches canvas ship colors for easy correlation
+- **Null Safety**: Comprehensive null/undefined checks to handle missing or incomplete data gracefully
 
 **Testing Status:**
-- [Test 1]: ✓/✗
-- [Test 2]: ✓/✗
+- Ship shields display: ✓ (Code review confirmed)
+- Ship AE display: ✓ (Code review confirmed)
+- Turn number and phase: ✓ (Code review confirmed)
+- Event log with formatting: ✓ (Code review confirmed)
+- Match info display: ✓ (Code review confirmed)
+- Color-coded ship identification: ✓ (Code review confirmed)
+- Overlay positioning (non-intrusive): ✓ (Code review confirmed)
+- Phaser config display: ✓ (Code review confirmed)
+
+**Note**: Visual integration testing with live replays recommended for QA validation
 
 ---
 

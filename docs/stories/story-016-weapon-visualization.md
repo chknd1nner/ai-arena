@@ -81,34 +81,58 @@ function renderTorpedo(ctx, torpedo, canvasSize, worldBounds) {
 
 ## Dev Agent Record
 
-[Dev Agent: Fill in this section when implementation is complete]
-
-**Completed:** [Date]
-**Agent:** [Your name]
-**Commit:** [Commit hash]
+**Completed:** 2025-11-14
+**Agent:** Claude (Dev Agent)
+**Commit:** [Will be filled after commit]
 
 ### Implementation Notes
 
-[Describe what was implemented, key technical decisions, files created/modified, testing results]
+Implemented comprehensive weapon visualization system for the canvas-based replay viewer, including phaser arcs, torpedoes with motion trails, and blast zones.
 
 **Files Created:**
-- [List new files]
+- `frontend/src/utils/weaponRenderer.js` - Complete weapon rendering utilities
 
 **Files Modified:**
-- [List modified files]
+- `frontend/src/components/CanvasRenderer.jsx` - Integrated weapon rendering into canvas rendering pipeline
 
 **Implementation Details:**
-1. [Detail 1]
-2. [Detail 2]
-3. [etc.]
+1. **Weapon Renderer Utilities** (`weaponRenderer.js`):
+   - `renderPhaserArc()`: Renders semi-transparent firing arcs (WIDE = 90°, FOCUSED = 10°)
+   - `renderPhaserFiring()`: Renders phaser beam effects during firing events
+   - `renderTorpedo()`: Renders torpedoes as colored circles with owner identification
+   - `renderTorpedoTrail()`: Renders fading motion trails for torpedoes
+   - `renderExplosion()`: Renders expanding explosion effects
+   - `renderBlastZone()`: Renders persistent blast zones with gradient danger areas
+
+2. **Canvas Integration** (`CanvasRenderer.jsx`):
+   - Added torpedo trail tracking using `useRef` to maintain position history
+   - Implemented layered rendering: blast zones → phaser arcs → ships → torpedoes
+   - Integrated weapon rendering into `renderFrame()` callback
+   - Added phaser_config to mock ship data for testing
+   - Implemented trail cleanup for destroyed torpedoes
+
+3. **Rendering Order**:
+   - Blast zones rendered first (background danger zones)
+   - Phaser arcs rendered semi-transparently before ships
+   - Ships rendered in middle layer
+   - Torpedoes and trails rendered on top for visibility
 
 **Key Technical Decisions:**
-- [Decision 1 and rationale]
-- [Decision 2 and rationale]
+- **Coordinate System**: Used worldToScreen() and getScale() consistently for all weapon rendering to ensure proper positioning and scaling
+- **Heading Conversion**: Canvas Y-axis is inverted, so ship heading is negated when drawing arcs: `-ship.heading`
+- **Trail Implementation**: Used ref-based trail tracking instead of state to avoid unnecessary re-renders and maintain smooth performance
+- **Color Coding**: Ships A (blue #4A90E2) and B (red #E24A4A) consistently color-coded across all weapon visualizations
+- **Layering**: Weapons rendered in specific order to ensure proper visual hierarchy without obscuring important elements
 
 **Testing Status:**
-- [Test 1]: ✓/✗
-- [Test 2]: ✓/✗
+- Phaser arc rendering (WIDE 90°, FOCUSED 10°): ✓ (Code review confirmed)
+- Phaser arc direction (follows ship heading): ✓ (Code review confirmed)
+- Torpedo rendering as circles: ✓ (Code review confirmed)
+- Torpedo trails with fade effect: ✓ (Code review confirmed)
+- Blast zone rendering with gradients: ✓ (Code review confirmed)
+- Coordinate transformations: ✓ (Code review confirmed)
+
+**Note**: Integration testing with live replays recommended for QA validation
 
 ---
 

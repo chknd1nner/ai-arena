@@ -1,11 +1,21 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { worldToScreen, DEFAULT_WORLD_BOUNDS } from '../utils/coordinateTransform';
 import { renderShip } from '../utils/shipRenderer';
+import {
+  renderPhaserArc,
+  renderTorpedo,
+  renderTorpedoTrail,
+  renderBlastZone
+} from '../utils/weaponRenderer';
 
 const CanvasRenderer = ({ width = 1200, height = 800, turnState = null }) => {
   const canvasRef = useRef(null);
   // eslint-disable-next-line no-unused-vars
   const [dimensions, setDimensions] = useState({ width, height });
+
+  // Track torpedo trails (store last N positions for each torpedo)
+  const torpedoTrails = useRef({});
+  const TRAIL_LENGTH = 10; // Number of positions to keep in trail
 
   // Mock ship data for testing (used when no turnState provided)
   const mockShipData = {
@@ -14,14 +24,16 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null }) => {
       velocity: { x: 15, y: 5 },
       heading: Math.PI / 4,  // 45 degrees - northeast
       shields: 85,
-      ae: 67
+      ae: 67,
+      phaser_config: 'WIDE'
     },
     ship_b: {
       position: { x: 200, y: -100 },
       velocity: { x: -10, y: 8 },
       heading: Math.PI * 0.75,  // 135 degrees - northwest
       shields: 92,
-      ae: 54
+      ae: 54,
+      phaser_config: 'FOCUSED'
     }
   };
 
@@ -118,9 +130,61 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null }) => {
     // Render arena boundaries
     renderArena(ctx, dims);
 
+    // Render blast zones (behind everything for danger zones)
+    if (turnState && turnState.blast_zones && Array.isArray(turnState.blast_zones)) {
+      const worldBounds = DEFAULT_WORLD_BOUNDS;
+      turnState.blast_zones.forEach((blastZone) => {
+        const remainingTime = blastZone.remaining_time || 60.0;
+        const totalDuration = 60.0;
+        renderBlastZone(ctx, blastZone, dims, worldBounds, remainingTime, totalDuration);
+      });
+    }
+
+    // Render phaser arcs (semi-transparent, behind ships)
+    const worldBounds = DEFAULT_WORLD_BOUNDS;
+    const shipData = turnState || mockShipData;
+
+    if (shipData.ship_a && shipData.ship_a.phaser_config) {
+      renderPhaserArc(ctx, shipData.ship_a, shipData.ship_a.phaser_config, dims, worldBounds);
+    }
+
+    if (shipData.ship_b && shipData.ship_b.phaser_config) {
+      renderPhaserArc(ctx, shipData.ship_b, shipData.ship_b.phaser_config, dims, worldBounds);
+    }
+
     // Render ships (from turnState or mock data)
     renderShips(ctx, dims);
-  }, [renderArena, renderShips]);
+
+    // Render torpedoes and trails (on top of ships)
+    if (turnState && turnState.torpedoes && Array.isArray(turnState.torpedoes)) {
+      turnState.torpedoes.forEach((torpedo) => {
+        const torpId = torpedo.id || `${torpedo.owner}_${torpedo.position.x}_${torpedo.position.y}`;
+
+        if (!torpedoTrails.current[torpId]) {
+          torpedoTrails.current[torpId] = [];
+        }
+
+        torpedoTrails.current[torpId].push({ ...torpedo.position });
+
+        if (torpedoTrails.current[torpId].length > TRAIL_LENGTH) {
+          torpedoTrails.current[torpId].shift();
+        }
+
+        renderTorpedoTrail(ctx, torpedo, torpedoTrails.current[torpId], dims, worldBounds);
+        renderTorpedo(ctx, torpedo, dims, worldBounds);
+      });
+
+      // Clean up old trails
+      const activeTorpIds = turnState.torpedoes.map(t =>
+        t.id || `${t.owner}_${t.position.x}_${t.position.y}`
+      );
+      Object.keys(torpedoTrails.current).forEach(id => {
+        if (!activeTorpIds.includes(id)) {
+          delete torpedoTrails.current[id];
+        }
+      });
+    }
+  }, [renderArena, renderShips, turnState, mockShipData, TRAIL_LENGTH]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

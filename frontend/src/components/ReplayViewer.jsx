@@ -3,6 +3,7 @@ import { useReplayData } from '../hooks/useReplayData';
 import { usePlaybackControls } from '../hooks/usePlaybackControls';
 import CanvasRenderer from './CanvasRenderer';
 import PlaybackControls from './PlaybackControls';
+import StateOverlay from './StateOverlay';
 
 const ReplayViewer = ({ matchId }) => {
   const { replay, loading, error } = useReplayData(matchId);
@@ -93,27 +94,19 @@ const ReplayViewer = ({ matchId }) => {
         />
       </div>
 
-      {/* Turn Events */}
-      {currentTurn?.events && currentTurn.events.length > 0 && (
-        <div style={{
-          padding: '15px',
-          backgroundColor: '#1a1a1a',
-          borderRadius: '8px',
-          color: '#fff'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#aaa' }}>Turn Events:</h4>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            {currentTurn.events.map((event, idx) => (
-              <li key={idx} style={{ marginBottom: '5px', fontSize: '14px' }}>
-                <span style={{ color: '#ffaa00', fontWeight: 'bold' }}>{event.type}</span>
-                {event.attacker && ` - Attacker: ${event.attacker}`}
-                {event.damage && ` - Damage: ${event.damage}`}
-                {event.message && ` - ${event.message}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* State Overlay - Shows ship stats, events, and game state */}
+      <StateOverlay
+        turnState={currentTurn?.state}
+        turnNumber={currentTurnIndex}
+        maxTurns={totalTurns}
+        events={currentTurn?.events || []}
+        matchInfo={{
+          match_id: replay.match_id,
+          model_a: replay.model_a,
+          model_b: replay.model_b,
+          winner: replay.winner
+        }}
+      />
     </div>
   );
 };
