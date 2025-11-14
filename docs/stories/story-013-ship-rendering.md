@@ -1,7 +1,7 @@
 # Story 013: Ship Rendering
 
 **Epic:** [Epic 003: Canvas-Based Match Replay Viewer](../epic-003-canvas-replay-viewer.md)
-**Status:** Not Started
+**Status:** Ready for QA
 **Size:** Medium (~1.5-2 hours)
 **Priority:** P0
 
@@ -225,3 +225,47 @@ velocity: { x: -10, y: 0 } // Moving west (backward)
 - Make heading vs velocity OBVIOUS
 - This validates Epic 002's biggest feature
 - Players should immediately see when a ship is strafing
+
+---
+
+## Dev Agent Record
+
+**Completed:** 2025-11-14
+**Agent:** Claude
+**Commit:** 4d32367
+
+### Implementation Notes
+
+Successfully implemented ship rendering with complete visual distinction between heading and velocity:
+
+**Files Created:**
+- `frontend/src/utils/shipRenderer.js` - Complete ship rendering system with triangle (heading) and arrow (velocity) visualization
+
+**Files Modified:**
+- `frontend/src/components/CanvasRenderer.jsx` - Updated to render ships using mock data and accept optional turnState prop
+
+**Implementation Details:**
+1. **Ship Triangle (Heading):** Rendered as filled triangle with white outline, rotates based on ship.heading, clearly shows which direction ship is facing
+2. **Velocity Vector (Movement Arrow):** Semi-transparent arrow showing actual movement direction, includes arrowhead, scales with velocity magnitude
+3. **Ship Stats Display:** Shows ship label above ship, displays shields and AE below ship
+4. **Color Scheme:** Ship A uses blue (#4A90E2), Ship B uses red (#E24A4A) for clear distinction
+5. **Mock Data:** Added example ships with different heading/velocity combinations to demonstrate strafing
+
+**Key Technical Decisions:**
+- Used canvas coordinate transformation (ctx.translate/rotate) for clean heading rotation
+- Applied negative rotation (-heading) to compensate for flipped canvas Y-axis
+- Made velocity arrow semi-transparent (alpha 0.7) to distinguish from heading triangle
+- Set minimum velocity threshold (0.1) before drawing arrow to avoid rendering for stationary ships
+- Positioned labels/stats relative to ship size for consistent spacing
+
+**Visual Validation:**
+- Triangle and arrow clearly distinct when heading ≠ velocity direction
+- Demonstrates Epic 002's strafing mechanic effectively
+- Ships render correctly at all positions within world bounds
+- Stats are readable and properly positioned
+
+**Testing Status:**
+- Mock data rendering: ✓ Working
+- Multiple heading/velocity scenarios: ✓ Tested
+- Color distinction: ✓ Clear
+- Coordinate transformation: ✓ Accurate

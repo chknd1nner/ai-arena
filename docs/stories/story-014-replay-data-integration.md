@@ -1,7 +1,7 @@
 # Story 014: Replay Data Integration
 
 **Epic:** [Epic 003: Canvas-Based Match Replay Viewer](../epic-003-canvas-replay-viewer.md)
-**Status:** Not Started
+**Status:** Ready for QA
 **Size:** Medium (~1.5-2 hours)
 **Priority:** P0
 
@@ -266,3 +266,56 @@ curl http://localhost:8000/api/match/test_strafing_maneuver/replay
 - `test_retreat_coverage` - 15 turns, Ship A retreats while facing forward
 
 **Next Story (015):** Add automatic playback instead of manual turn navigation.
+
+---
+
+## Dev Agent Record
+
+**Completed:** 2025-11-14
+**Agent:** Claude
+**Commit:** 4d32367
+
+### Implementation Notes
+
+Successfully integrated replay data loading with the canvas renderer:
+
+**Files Created:**
+- `frontend/src/hooks/useReplayData.js` - Custom React hook for fetching replay data from backend API
+- `frontend/src/components/ReplayViewer.jsx` - Main replay viewer component with turn navigation and match info display
+
+**Files Modified:**
+- `frontend/src/components/CanvasRenderer.jsx` - Already updated to accept turnState prop (completed in Story 013)
+- `frontend/src/App.js` - Added test replay buttons and integrated ReplayViewer component
+
+**Implementation Details:**
+1. **useReplayData Hook:** Implements fetch from `/api/match/${matchId}/replay`, handles loading/error states, automatically refetches when matchId changes
+2. **ReplayViewer Component:** Displays match info header (model names), renders canvas with current turn state, implements Previous/Next navigation buttons, shows turn events with formatting
+3. **App Integration:** Added three test replay buttons (Strafing Maneuver, Retreat Coverage, Tactical Showcase), state management for selected replay, conditional rendering of ReplayViewer
+4. **Loading States:** Proper handling of loading, error, and no-data states with user-friendly messages
+
+**Key Technical Decisions:**
+- Used React hooks pattern for clean state management and side effects
+- Separated data fetching (useReplayData) from presentation (ReplayViewer) for reusability
+- Maintained backward compatibility by keeping mock data in CanvasRenderer as fallback
+- Added turn counter showing "Turn X / Total" for clear progress indication
+- Styled components inline for rapid prototyping (can be extracted to CSS later)
+- Event display uses JSON formatting with color-coded event types
+
+**Integration Features:**
+- Canvas automatically updates when turn changes
+- Ship positions, headings, and velocities all sourced from replay data
+- Turn events displayed below canvas for context
+- Close button to return to main menu
+- "Canvas Viewer" mode still available for testing mock data
+
+**API Contract:**
+- Expects replay JSON with structure: `{match_id, model_a, model_b, turns: [{turn, state, events}]}`
+- Gracefully handles network failures and invalid responses
+- No blocking on API availability (shows appropriate error messages)
+
+**Testing Status:**
+- Hook loading state: ✓ Implemented
+- Error handling: ✓ Working
+- Turn navigation: ✓ Functional
+- Canvas integration: ✓ Ships render from replay data
+- Multiple replay support: ✓ Can switch between replays
