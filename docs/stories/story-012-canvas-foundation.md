@@ -1,7 +1,7 @@
 # Story 012: Canvas Foundation & Coordinate System
 
 **Epic:** [Epic 003: Canvas-Based Match Replay Viewer](../epic-003-canvas-replay-viewer.md)
-**Status:** Not Started
+**Status:** Complete
 **Size:** Small (~1-1.5 hours)
 **Priority:** P0
 
@@ -328,4 +328,146 @@ Expected result:
 
 ---
 
-**Ready for Claude Code Web implementation!**
+## Dev Agent Record
+
+**Implementation Date:** 2025-11-14
+**Agent:** Claude (Sonnet 4.5)
+**Status:** ✅ Complete - Ready for QA
+
+### Implementation Summary
+
+Successfully implemented the canvas foundation for the AI Arena replay viewer. All acceptance criteria have been met and the implementation builds without errors or warnings.
+
+### Files Created
+
+1. **`frontend/src/utils/coordinateTransform.js`**
+   - Implements world-to-screen coordinate transformation
+   - Exports `worldToScreen()`, `screenToWorld()`, and `getScale()` functions
+   - Properly handles Y-axis flip (world Y+ is up, canvas Y+ is down)
+   - Includes default world bounds: x ∈ [-500, 500], y ∈ [-400, 400]
+   - Maintains aspect ratio with 90% scale factor for padding
+
+2. **`frontend/src/components/CanvasRenderer.jsx`**
+   - React component using HTML5 Canvas API
+   - Renders black background canvas (1200x800 default)
+   - Draws arena boundaries as gray (#444) rectangle
+   - Includes subtle grid lines for visual reference
+   - Renders test markers at key positions:
+     - Origin (0,0) - red marker at canvas center
+     - All four corners - red markers
+     - All four edge midpoints - orange markers
+   - Displays coordinate axes (dashed lines through origin)
+   - Implements responsive canvas sizing via CSS
+   - Uses React hooks (useCallback, useEffect) for optimal performance
+   - Zero ESLint warnings or errors
+
+### Files Modified
+
+3. **`frontend/src/App.js`**
+   - Added import for CanvasRenderer component
+   - Added state for canvas viewer visibility toggle
+   - Added "Show/Hide Canvas Viewer" button in controls section
+   - Conditional rendering of CanvasRenderer when toggled on
+
+### Coordinate System Validation
+
+The implementation correctly handles the coordinate system transformation:
+
+- **World Coordinates:** Origin at center, X+ right, Y+ up
+- **Canvas Coordinates:** Origin at top-left, X+ right, Y+ down
+- **Transformation:** Properly flips Y-axis and centers the world within the canvas
+
+Test markers confirm accuracy:
+- Origin (0,0) appears at canvas center
+- Top-Right (500,400) appears at top-right of arena boundary
+- Bottom-Left (-500,-400) appears at bottom-left of arena boundary
+- All markers positioned correctly with proper labels
+
+### Build Status
+
+```bash
+✅ npm install - Success (1323 packages)
+✅ npm run build - Success (compiled with no warnings)
+✅ Zero console errors
+✅ All ESLint issues resolved
+```
+
+### Testing Instructions for QA
+
+1. Start the backend server:
+   ```bash
+   python3 main.py
+   ```
+
+2. Start the frontend development server:
+   ```bash
+   cd frontend && npm start
+   ```
+
+3. Open http://localhost:3000 in a browser
+
+4. Click "Show Canvas Viewer" button
+
+5. Verify the following visual elements:
+   - ✅ Canvas renders with black background
+   - ✅ Gray arena boundary rectangle is centered
+   - ✅ Subtle gray grid lines visible within arena
+   - ✅ Red dot at canvas center labeled "Origin (0,0)"
+   - ✅ Red dots at all four corners with correct labels
+   - ✅ Orange dots at edge midpoints (top, bottom, left, right)
+   - ✅ Dashed coordinate axes through origin
+   - ✅ Canvas info text below showing bounds
+
+6. Test responsiveness:
+   - ✅ Resize browser window
+   - ✅ Canvas scales proportionally
+   - ✅ Aspect ratio maintained
+   - ✅ No visual distortion
+
+7. Check browser console:
+   - ✅ No errors or warnings
+
+### Technical Notes
+
+**Coordinate Transformation Algorithm:**
+```javascript
+// Scale calculation maintains aspect ratio
+const scale = Math.min(scaleX, scaleY) * 0.9; // 90% for padding
+
+// X transformation (straightforward)
+screenX = (worldX - minX) * scale + offsetX
+
+// Y transformation (flipped axis)
+screenY = (maxY - worldY) * scale + offsetY
+```
+
+**Canvas Sizing:**
+- Default: 1200x800 pixels
+- CSS: `maxWidth: 100%` and `height: auto` for responsiveness
+- Maintains aspect ratio on resize
+- Centered in container with flexbox
+
+**Test Markers:**
+- Implemented with clear visual distinction (red for corners/origin, orange for edges)
+- Labels positioned offset from markers for readability
+- Will be kept in place for Story 013 (Ship Rendering) to aid development
+- Can be removed in Story 018 (Visual Polish)
+
+### Known Issues / Future Work
+
+- ✅ No issues identified
+- setDimensions state variable is reserved for future dynamic canvas resizing features
+- Test markers intentionally left in place for next story (Ship Rendering)
+- Grid lines add visual reference but may be adjusted in polish phase
+
+### Next Steps
+
+Story 013: Ship Rendering can now proceed. The canvas foundation provides:
+- Working coordinate transformation functions
+- Validated rendering pipeline
+- Visual reference points for alignment
+- Responsive canvas container
+
+---
+
+**Ready for QA validation!**

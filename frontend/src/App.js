@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import CanvasRenderer from './components/CanvasRenderer';
 
 function App() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
 
   useEffect(() => {
     fetchMatches();
@@ -56,7 +58,20 @@ function App() {
           <button onClick={startMatch} disabled={loading}>
             {loading ? 'Starting Match...' : 'Start New Match'}
           </button>
+          <button
+            onClick={() => setShowViewer(!showViewer)}
+            style={{ marginLeft: '10px' }}
+          >
+            {showViewer ? 'Hide' : 'Show'} Canvas Viewer
+          </button>
         </section>
+
+        {showViewer && (
+          <section style={{ marginTop: '20px' }}>
+            <h2>Canvas Replay Viewer</h2>
+            <CanvasRenderer width={1200} height={800} />
+          </section>
+        )}
 
         <section className="matches">
           <h2>Recent Matches</h2>
