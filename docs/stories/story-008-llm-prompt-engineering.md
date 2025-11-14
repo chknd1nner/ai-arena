@@ -276,3 +276,105 @@ If LLMs struggle:
 - Simplify language
 - Make format more rigid
 - Provide anti-patterns ("DON'T do this")
+
+---
+
+## Developer Agent Record
+
+**Completed:** 2025-11-14
+**Agent:** Claude (Sonnet 4.5)
+**Session ID:** claude/llm-adapter-movement-rotation-0149sriSJvstQSkAGpNzPho6
+
+### Implementation Summary
+
+Successfully updated the LLM system prompt in `_build_prompt()` method to teach models the independent movement and rotation system. The new prompt provides comprehensive documentation, tactical examples, and clear JSON format specification.
+
+### Files Modified
+
+1. **ai_arena/llm_adapter/adapter.py** (lines 104-237)
+   - Replaced old movement-only prompt with comprehensive two-command system documentation
+   - Added structured tables for all 9 movement directions and 5 rotation commands
+   - Included AE costs, rotation rates, and timing information
+   - Added 4 detailed tactical maneuver examples with use cases
+   - Explained independence of movement vs rotation
+   - Clarified phaser heading vs movement direction
+   - Specified new JSON format with `ship_movement` and `ship_rotation` fields
+
+2. **tests/test_llm_adapter.py** (lines 44-110)
+   - Created 6 comprehensive tests for prompt content:
+     - `test_system_prompt_includes_movement_directions` - Verifies all 9 directions documented
+     - `test_system_prompt_includes_rotation_commands` - Verifies all 5 commands documented
+     - `test_system_prompt_includes_tactical_examples` - Verifies 4 tactical examples present
+     - `test_system_prompt_explains_independence` - Verifies independence concept explained
+     - `test_system_prompt_explains_phaser_heading` - Verifies phaser/heading relationship explained
+     - `test_system_prompt_includes_json_format` - Verifies JSON format documented
+
+### Test Results
+
+✅ **All 6 prompt engineering tests passing**
+
+```
+tests/test_llm_adapter.py::test_system_prompt_includes_movement_directions PASSED
+tests/test_llm_adapter.py::test_system_prompt_includes_rotation_commands PASSED
+tests/test_llm_adapter.py::test_system_prompt_includes_tactical_examples PASSED
+tests/test_llm_adapter.py::test_system_prompt_explains_independence PASSED
+tests/test_llm_adapter.py::test_system_prompt_explains_phaser_heading PASSED
+tests/test_llm_adapter.py::test_system_prompt_includes_json_format PASSED
+```
+
+### Acceptance Criteria Status
+
+- ✅ System prompt documents all 9 movement directions with descriptions
+- ✅ System prompt documents all 5 rotation commands with descriptions
+- ✅ AE costs listed for each movement and rotation option
+- ✅ Tactical maneuver examples provided (strafing, retreat, reposition, drift)
+- ✅ JSON response format clearly specified with both fields
+- ✅ Examples show combined movement + rotation scenarios
+- ✅ Prompt explains independence of movement (velocity) vs rotation (heading)
+- ✅ Prompt explains phasers point at heading, not movement direction
+
+### Implementation Details
+
+**Movement Directions Table:**
+- All 9 directions documented with angles, descriptions, and AE costs
+- Costs range from 0.0 AE/s (STOP) to 0.80 AE/s (backward diagonals)
+- Clear note that movement sets velocity but doesn't change heading
+
+**Rotation Commands Table:**
+- All 5 commands documented with rates and AE costs
+- Soft rotations: 1°/s (15° total), 0.13 AE/s
+- Hard rotations: 3°/s (45° total), 0.33 AE/s
+- Clear note that rotation changes heading but doesn't change velocity
+
+**Tactical Maneuvers:**
+1. **Strafing Run** - RIGHT + HARD_LEFT (1.0 AE/s total)
+2. **Retreat with Coverage** - BACKWARD + NONE (0.67 AE/s total)
+3. **Aggressive Reposition** - FORWARD + HARD_RIGHT (0.66 AE/s total)
+4. **The Drift** - LEFT + SOFT_LEFT (0.80 AE/s total)
+
+Each maneuver includes movement, rotation, result, cost breakdown, and use case.
+
+**Key Concepts Emphasized:**
+- Independence of movement and rotation systems
+- Phasers point at heading direction, not movement direction
+- Combined AE costs (movement + rotation - 0.33 regen)
+- Practical tactical applications
+
+### Areas of Concern
+
+**None identified.** The implementation is complete and all tests pass. The prompt is comprehensive and follows best practices for LLM instruction:
+- Structured format with clear sections
+- Tables for easy parsing
+- Concrete examples with reasoning
+- Explicit statements of key concepts
+- Clear JSON format specification
+
+### Next Steps
+
+Story 009 (LLM Order Parsing) implemented in same commit to parse the new JSON format that this prompt specifies. The two stories form a complete Phase 2 implementation.
+
+### Commit Information
+
+**Commit:** 04558c4
+**Message:** "Implement LLM adapter for independent movement & rotation (Epic 002 Phase 2)"
+**Branch:** claude/llm-adapter-movement-rotation-0149sriSJvstQSkAGpNzPho6
