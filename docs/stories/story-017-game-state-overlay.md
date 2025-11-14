@@ -1,7 +1,7 @@
 # Story 017: Game State Overlay
 
 **Epic:** [Epic 003: Canvas-Based Match Replay Viewer](../epic-003-canvas-replay-viewer.md)
-**Status:** Not Started
+**Status:** Ready for Dev
 **Size:** Small (~1 hour)
 **Priority:** P2
 
@@ -71,3 +71,77 @@ const ShipStats = ({ ship, label, color }) => (
 ## Dependencies
 
 - **Requires:** Story 014 (replay data)
+
+---
+
+## Dev Agent Record
+
+[Dev Agent: Fill in this section when implementation is complete]
+
+**Completed:** [Date]
+**Agent:** [Your name]
+**Commit:** [Commit hash]
+
+### Implementation Notes
+
+[Describe what was implemented, key technical decisions, files created/modified, testing results]
+
+**Files Created:**
+- [List new files]
+
+**Files Modified:**
+- [List modified files]
+
+**Implementation Details:**
+1. [Detail 1]
+2. [Detail 2]
+3. [etc.]
+
+**Key Technical Decisions:**
+- [Decision 1 and rationale]
+- [Decision 2 and rationale]
+
+**Testing Status:**
+- [Test 1]: ✓/✗
+- [Test 2]: ✓/✗
+
+---
+
+## QA Agent Record
+
+[QA Agent: Fill in this section after reviewing the implementation]
+
+**Reviewed:** [Date]
+**QA Agent:** [Your name]
+**Branch:** [Branch name]
+**Result:** ✅ PASS / ⚠️ PASS with recommendations / ❌ FAIL - Remediation needed
+
+### Automated Testing Results
+
+[Describe automated tests run and results]
+
+### Acceptance Criteria Validation
+
+- [ ] Ship shields displayed near each ship
+- [ ] Ship AE displayed near each ship
+- [ ] Turn number and phase shown
+- [ ] Event log (recent hits, launches) visible
+- [ ] Match info (models, winner) displayed
+- [ ] Overlay doesn't obscure important action
+
+### Issues Found
+
+[List any issues discovered during QA]
+
+**Critical Issues:**
+- [None or list]
+
+**Minor Issues:**
+- [None or list]
+
+**Recommendations:**
+- [Suggestions for improvement]
+
+### Final Assessment
+
+[Summary of QA findings and final pass/fail decision. If PASS with recommendations, list them. If FAIL, specify what needs remediation and update story status to "Remediation needed"]
