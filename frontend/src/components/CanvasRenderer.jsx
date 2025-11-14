@@ -1,10 +1,29 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { worldToScreen, DEFAULT_WORLD_BOUNDS } from '../utils/coordinateTransform';
+import { renderShip } from '../utils/shipRenderer';
 
-const CanvasRenderer = ({ width = 1200, height = 800 }) => {
+const CanvasRenderer = ({ width = 1200, height = 800, turnState = null }) => {
   const canvasRef = useRef(null);
   // eslint-disable-next-line no-unused-vars
   const [dimensions, setDimensions] = useState({ width, height });
+
+  // Mock ship data for testing (used when no turnState provided)
+  const mockShipData = {
+    ship_a: {
+      position: { x: -200, y: 100 },
+      velocity: { x: 15, y: 5 },
+      heading: Math.PI / 4,  // 45 degrees - northeast
+      shields: 85,
+      ae: 67
+    },
+    ship_b: {
+      position: { x: 200, y: -100 },
+      velocity: { x: -10, y: 8 },
+      heading: Math.PI * 0.75,  // 135 degrees - northwest
+      shields: 92,
+      ae: 54
+    }
+  };
 
   const renderArena = useCallback((ctx, dims) => {
     const worldBounds = DEFAULT_WORLD_BOUNDS;
@@ -56,62 +75,40 @@ const CanvasRenderer = ({ width = 1200, height = 800 }) => {
     }
   }, []);
 
-  const renderTestMarkers = useCallback((ctx, dims) => {
+  const renderShips = useCallback((ctx, dims) => {
     const worldBounds = DEFAULT_WORLD_BOUNDS;
 
-    // Test points to verify coordinate transformation
-    const testPoints = [
-      { pos: { x: 0, y: 0 }, label: 'Origin (0,0)', color: '#ff0000' },
-      { pos: { x: 500, y: 400 }, label: 'Top-Right (500,400)', color: '#ff4444' },
-      { pos: { x: -500, y: 400 }, label: 'Top-Left (-500,400)', color: '#ff4444' },
-      { pos: { x: 500, y: -400 }, label: 'Bottom-Right (500,-400)', color: '#ff4444' },
-      { pos: { x: -500, y: -400 }, label: 'Bottom-Left (-500,-400)', color: '#ff4444' },
-      { pos: { x: 0, y: 400 }, label: 'Top (0,400)', color: '#ffaa00' },
-      { pos: { x: 0, y: -400 }, label: 'Bottom (0,-400)', color: '#ffaa00' },
-      { pos: { x: 500, y: 0 }, label: 'Right (500,0)', color: '#ffaa00' },
-      { pos: { x: -500, y: 0 }, label: 'Left (-500,0)', color: '#ffaa00' }
-    ];
+    // Use turnState if provided, otherwise use mock data
+    const shipData = turnState || mockShipData;
 
-    testPoints.forEach(({ pos, label, color }) => {
-      const screen = worldToScreen(pos, dims, worldBounds);
+    // Define ship colors
+    const SHIP_A_COLOR = '#4A90E2';  // Blue
+    const SHIP_B_COLOR = '#E24A4A';  // Red
 
-      // Draw circle marker
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(screen.x, screen.y, 5, 0, Math.PI * 2);
-      ctx.fill();
+    // Render Ship A
+    if (shipData.ship_a) {
+      renderShip(
+        ctx,
+        shipData.ship_a,
+        SHIP_A_COLOR,
+        dims,
+        worldBounds,
+        'Ship A'
+      );
+    }
 
-      // Draw label
-      ctx.fillStyle = 'white';
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, screen.x + 10, screen.y);
-    });
-
-    // Draw coordinate axes for additional clarity
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-
-    // X-axis (horizontal line through origin)
-    const xAxisLeft = worldToScreen({ x: worldBounds.minX, y: 0 }, dims, worldBounds);
-    const xAxisRight = worldToScreen({ x: worldBounds.maxX, y: 0 }, dims, worldBounds);
-    ctx.beginPath();
-    ctx.moveTo(xAxisLeft.x, xAxisLeft.y);
-    ctx.lineTo(xAxisRight.x, xAxisRight.y);
-    ctx.stroke();
-
-    // Y-axis (vertical line through origin)
-    const yAxisTop = worldToScreen({ x: 0, y: worldBounds.maxY }, dims, worldBounds);
-    const yAxisBottom = worldToScreen({ x: 0, y: worldBounds.minY }, dims, worldBounds);
-    ctx.beginPath();
-    ctx.moveTo(yAxisTop.x, yAxisTop.y);
-    ctx.lineTo(yAxisBottom.x, yAxisBottom.y);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
-  }, []);
+    // Render Ship B
+    if (shipData.ship_b) {
+      renderShip(
+        ctx,
+        shipData.ship_b,
+        SHIP_B_COLOR,
+        dims,
+        worldBounds,
+        'Ship B'
+      );
+    }
+  }, [turnState, mockShipData]);
 
   const renderFrame = useCallback((ctx, dims) => {
     // Clear canvas with black background
@@ -121,9 +118,9 @@ const CanvasRenderer = ({ width = 1200, height = 800 }) => {
     // Render arena boundaries
     renderArena(ctx, dims);
 
-    // Render test markers to validate coordinate transformation
-    renderTestMarkers(ctx, dims);
-  }, [renderArena, renderTestMarkers]);
+    // Render ships (from turnState or mock data)
+    renderShips(ctx, dims);
+  }, [renderArena, renderShips]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
