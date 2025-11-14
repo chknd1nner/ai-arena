@@ -3,7 +3,10 @@ from typing import List, Tuple, Optional
 import numpy as np
 from enum import Enum
 
-from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, Vec2D, MovementType, PhaserConfig
+from ai_arena.game_engine.data_models import (
+    GameState, Orders, Event, ShipState, TorpedoState, Vec2D,
+    MovementType, MovementDirection, RotationCommand, PhaserConfig
+)
 from ai_arena.config import GameConfig
 
 # ============= Core Engine =============
@@ -35,23 +38,48 @@ class PhysicsEngine:
         self.ship_speed = config.ship.base_speed_units_per_second
         self.torpedo_speed = config.torpedo.speed_units_per_second
 
-        # Movement costs: Calculate from AE costs per second * decision interval
-        # For now, using simplified discrete costs based on config AE per second
+        # Movement direction offsets (relative to current heading)
+        # Used for independent movement system (Story 005)
+        # Convention: heading 0 = East (+X), positive angles = counterclockwise
+        self.MOVEMENT_DIRECTION_OFFSETS = {
+            MovementDirection.FORWARD: 0.0,              # 0° - Straight ahead
+            MovementDirection.FORWARD_LEFT: np.pi/4,     # +45° - Diagonal left (counterclockwise)
+            MovementDirection.FORWARD_RIGHT: -np.pi/4,   # -45° - Diagonal right (clockwise)
+            MovementDirection.LEFT: np.pi/2,             # +90° - Perpendicular left (counterclockwise)
+            MovementDirection.RIGHT: -np.pi/2,           # -90° - Perpendicular right (clockwise)
+            MovementDirection.BACKWARD: np.pi,           # 180° - Reverse
+            MovementDirection.BACKWARD_LEFT: 3*np.pi/4,  # +135° - Diagonal back-left
+            MovementDirection.BACKWARD_RIGHT: -3*np.pi/4,# -135° - Diagonal back-right
+            MovementDirection.STOP: 0.0,                 # Special case: zero velocity
+        }
+
+        # Rotation rates (degrees per second, from config)
+        # Used for independent rotation system (Story 006)
+        self.ROTATION_RATES = {
+            RotationCommand.NONE: 0.0,
+            RotationCommand.SOFT_LEFT: config.rotation.soft_turn_degrees_per_second,
+            RotationCommand.SOFT_RIGHT: -config.rotation.soft_turn_degrees_per_second,
+            RotationCommand.HARD_LEFT: config.rotation.hard_turn_degrees_per_second,
+            RotationCommand.HARD_RIGHT: -config.rotation.hard_turn_degrees_per_second,
+        }
+
+        # Legacy movement costs for validation (deprecated, will be removed)
+        # Kept for backward compatibility during transition
         decision_interval = config.simulation.decision_interval_seconds
         self.movement_costs = {
             MovementType.STRAIGHT: int(config.movement.forward_ae_per_second * decision_interval),
-            MovementType.SOFT_LEFT: int(config.movement.forward_diagonal_ae_per_second * decision_interval),
-            MovementType.SOFT_RIGHT: int(config.movement.forward_diagonal_ae_per_second * decision_interval),
-            MovementType.HARD_LEFT: int(config.movement.lateral_ae_per_second * decision_interval),
-            MovementType.HARD_RIGHT: int(config.movement.lateral_ae_per_second * decision_interval),
+            MovementType.SOFT_LEFT: int(config.movement.diagonal_ae_per_second * decision_interval),
+            MovementType.SOFT_RIGHT: int(config.movement.diagonal_ae_per_second * decision_interval),
+            MovementType.HARD_LEFT: int(config.movement.perpendicular_ae_per_second * decision_interval),
+            MovementType.HARD_RIGHT: int(config.movement.perpendicular_ae_per_second * decision_interval),
             MovementType.REVERSE: int(config.movement.backward_ae_per_second * decision_interval),
             MovementType.REVERSE_LEFT: int(config.movement.backward_diagonal_ae_per_second * decision_interval),
             MovementType.REVERSE_RIGHT: int(config.movement.backward_diagonal_ae_per_second * decision_interval),
             MovementType.STOP: int(config.movement.stop_ae_per_second * decision_interval),
         }
 
-        # Movement parameters (rotation angles)
-        # These could be derived from rotation config in the future
+        # Movement parameters (rotation angles) for torpedoes
+        # Torpedoes still use the old coupled movement system
         self.movement_params = {
             MovementType.STRAIGHT: {"rotation": 0},
             MovementType.SOFT_LEFT: {"rotation": np.radians(15)},
@@ -70,9 +98,9 @@ class PhysicsEngine:
         )
     
     def resolve_turn(
-        self, 
-        state: GameState, 
-        orders_a: Orders, 
+        self,
+        state: GameState,
+        orders_a: Orders,
         orders_b: Orders
     ) -> Tuple[GameState, List[Event]]:
         """
@@ -82,12 +110,25 @@ class PhysicsEngine:
         events = []
         new_state = self._copy_state(state)
         new_state.turn += 1
-        
+
         # 1. Validate and apply orders
         valid_orders_a = self._validate_orders(new_state.ship_a, orders_a)
         valid_orders_b = self._validate_orders(new_state.ship_b, orders_b)
-        
-        # 2. Apply weapon actions
+
+        # 2. Deduct combined AE costs (movement + rotation) - Story 007
+        movement_cost_a = self._get_movement_ae_cost(valid_orders_a.movement) * self.action_phase_duration
+        rotation_cost_a = self._get_rotation_ae_cost(valid_orders_a.rotation) * self.action_phase_duration
+        total_cost_a = movement_cost_a + rotation_cost_a
+
+        movement_cost_b = self._get_movement_ae_cost(valid_orders_b.movement) * self.action_phase_duration
+        rotation_cost_b = self._get_rotation_ae_cost(valid_orders_b.rotation) * self.action_phase_duration
+        total_cost_b = movement_cost_b + rotation_cost_b
+
+        # Deduct combined costs
+        new_state.ship_a.ae = max(0, new_state.ship_a.ae - total_cost_a)
+        new_state.ship_b.ae = max(0, new_state.ship_b.ae - total_cost_b)
+
+        # 3. Apply weapon actions
         weapon_events_a = self._apply_weapon_action(
             new_state, "ship_a", new_state.ship_a, valid_orders_a.weapon_action
         )
@@ -95,8 +136,8 @@ class PhysicsEngine:
             new_state, "ship_b", new_state.ship_b, valid_orders_b.weapon_action
         )
         events.extend(weapon_events_a + weapon_events_b)
-        
-        # 3. Simulate action phase with fixed timestep
+
+        # 4. Simulate action phase with fixed timestep
         for substep in range(self.substeps):
             self._update_ship_physics(new_state.ship_a, valid_orders_a, self.fixed_timestep)
             self._update_ship_physics(new_state.ship_b, valid_orders_b, self.fixed_timestep)
@@ -141,10 +182,47 @@ class PhysicsEngine:
             torpedoes=[TorpedoState(**t.__dict__) for t in state.torpedoes]
         )
 
+    def _get_movement_ae_cost(self, movement: MovementDirection) -> float:
+        """Get AE cost per second for movement direction."""
+        cost_map = {
+            MovementDirection.FORWARD: self.config.movement.forward_ae_per_second,
+            MovementDirection.FORWARD_LEFT: self.config.movement.diagonal_ae_per_second,
+            MovementDirection.FORWARD_RIGHT: self.config.movement.diagonal_ae_per_second,
+            MovementDirection.LEFT: self.config.movement.perpendicular_ae_per_second,
+            MovementDirection.RIGHT: self.config.movement.perpendicular_ae_per_second,
+            MovementDirection.BACKWARD: self.config.movement.backward_ae_per_second,
+            MovementDirection.BACKWARD_LEFT: self.config.movement.backward_diagonal_ae_per_second,
+            MovementDirection.BACKWARD_RIGHT: self.config.movement.backward_diagonal_ae_per_second,
+            MovementDirection.STOP: self.config.movement.stop_ae_per_second,
+        }
+        return cost_map[movement]
+
+    def _get_rotation_ae_cost(self, rotation: RotationCommand) -> float:
+        """Get AE cost per second for rotation command."""
+        cost_map = {
+            RotationCommand.NONE: self.config.rotation.none_ae_per_second,
+            RotationCommand.SOFT_LEFT: self.config.rotation.soft_turn_ae_per_second,
+            RotationCommand.SOFT_RIGHT: self.config.rotation.soft_turn_ae_per_second,
+            RotationCommand.HARD_LEFT: self.config.rotation.hard_turn_ae_per_second,
+            RotationCommand.HARD_RIGHT: self.config.rotation.hard_turn_ae_per_second,
+        }
+        return cost_map[rotation]
+
     def _validate_orders(self, ship: ShipState, orders: Orders) -> Orders:
-        # Basic validation, can be expanded
-        if self.movement_costs.get(orders.movement, 0) > ship.ae:
-            orders.movement = MovementType.STOP
+        """Validate orders and adjust if insufficient AE.
+
+        Checks combined cost of movement + rotation.
+        If insufficient AE, downgrades to STOP + NONE.
+        """
+        movement_cost = self._get_movement_ae_cost(orders.movement) * self.action_phase_duration
+        rotation_cost = self._get_rotation_ae_cost(orders.rotation) * self.action_phase_duration
+        total_cost = movement_cost + rotation_cost
+
+        if total_cost > ship.ae:
+            # Insufficient AE - downgrade to STOP + NONE
+            orders.movement = MovementDirection.STOP
+            orders.rotation = RotationCommand.NONE
+
         return orders
 
     def _apply_weapon_action(self, state: GameState, ship_id: str, ship: ShipState, weapon_action: str) -> List[Event]:
@@ -182,23 +260,35 @@ class PhysicsEngine:
         return events
 
     def _update_ship_physics(self, ship: ShipState, orders: Orders, dt: float):
-        """Update ship position and heading for one timestep."""
-        if orders.movement == MovementType.STOP:
+        """Update ship position and heading for one timestep.
+
+        Independent movement and rotation system (Stories 005-006):
+        1. Apply rotation (changes heading)
+        2. Apply movement (sets velocity direction relative to heading)
+        3. Update position
+        """
+        # 1. Apply rotation (independent of movement)
+        rotation_rate_deg_per_sec = self.ROTATION_RATES[orders.rotation]
+        rotation_per_dt_rad = np.radians(rotation_rate_deg_per_sec * dt)
+        ship.heading += rotation_per_dt_rad
+        ship.heading = ship.heading % (2 * np.pi)  # Wrap to [0, 2π)
+
+        # 2. Apply movement (independent of rotation)
+        if orders.movement == MovementDirection.STOP:
             ship.velocity = Vec2D(0, 0)
             return
 
-        # Rotation happens gradually over action phase duration
-        rotation_per_dt = self.movement_params[orders.movement]["rotation"] * dt / self.action_phase_duration
-        ship.heading += rotation_per_dt
-        ship.heading = ship.heading % (2 * np.pi)
+        # Calculate velocity direction (heading + movement offset)
+        movement_offset = self.MOVEMENT_DIRECTION_OFFSETS[orders.movement]
+        velocity_angle = ship.heading + movement_offset
 
-        # Update velocity based on heading
+        # Set velocity based on movement direction
         ship.velocity = Vec2D(
-            np.cos(ship.heading) * self.ship_speed,
-            np.sin(ship.heading) * self.ship_speed
+            np.cos(velocity_angle) * self.ship_speed,
+            np.sin(velocity_angle) * self.ship_speed
         )
 
-        # Update position
+        # 3. Update position
         ship.position = ship.position + (ship.velocity * dt)
 
     def _update_torpedo_physics(self, torpedo: TorpedoState, movement: Optional[MovementType], dt: float):
