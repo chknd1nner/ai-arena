@@ -426,3 +426,201 @@ class TestContinuousPhysicsIntegration:
         expected_ae = initial_ae - movement_cost - rotation_cost + regen
 
         assert abs(new_state.ship_a.ae - expected_ae) < 0.1
+
+
+class TestMovementAECostsPerSubstep:
+    """Test continuous movement AE costs (Story 022)."""
+
+    def test_movement_ae_cost_per_substep(self, physics_engine, config):
+        """Verify movement AE cost applied per substep."""
+        ship = ShipState(
+            position=Vec2D(0.0, 0.0),
+            velocity=Vec2D(0.0, 0.0),
+            heading=0.0,
+            shields=100.0,
+            ae=100.0,
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        )
+
+        orders = Orders(
+            movement=MovementDirection.LEFT,  # 0.67 AE/s
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        dt = config.simulation.physics_tick_rate_seconds  # 0.1s
+        expected_cost = config.movement.perpendicular_ae_per_second * dt  # 0.067 AE
+
+        initial_ae = ship.ae
+
+        # Apply one substep of physics
+        physics_engine._update_ship_physics(ship, orders, dt)
+
+        # AE should decrease by movement cost minus regeneration
+        regen = config.ship.ae_regen_per_second * dt
+        expected_ae = initial_ae - expected_cost + regen
+
+        assert ship.ae == pytest.approx(expected_ae, rel=1e-6)
+
+    def test_movement_cost_over_full_turn(self, physics_engine, config):
+        """Verify continuous movement cost equals total turn cost."""
+        ship = ShipState(
+            position=Vec2D(0.0, 0.0),
+            velocity=Vec2D(0.0, 0.0),
+            heading=0.0,
+            shields=100.0,
+            ae=100.0,
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        )
+
+        orders = Orders(
+            movement=MovementDirection.FORWARD,  # 0.33 AE/s
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        dt = config.simulation.physics_tick_rate_seconds
+        decision_interval = config.simulation.decision_interval_seconds
+        num_substeps = int(decision_interval / dt)
+
+        initial_ae = ship.ae
+
+        for _ in range(num_substeps):
+            physics_engine._update_ship_physics(ship, orders, dt)
+
+        # Net AE change: regen - movement
+        # Regen: 0.33 AE/s * 15s = 4.95 AE
+        # Movement: 0.33 AE/s * 15s = 4.95 AE
+        # Net: 0.0 AE (energy neutral for FORWARD movement)
+        assert ship.ae == pytest.approx(initial_ae, rel=1e-6)
+
+    def test_ae_does_not_go_negative(self, physics_engine, config):
+        """Verify AE is clamped at zero."""
+        ship = ShipState(
+            position=Vec2D(0.0, 0.0),
+            velocity=Vec2D(0.0, 0.0),
+            heading=0.0,
+            shields=100.0,
+            ae=0.05,  # Very low AE
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        )
+
+        orders = Orders(
+            movement=MovementDirection.LEFT,  # High cost: 0.67 AE/s
+            rotation=RotationCommand.HARD_LEFT,  # 0.33 AE/s
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        dt = config.simulation.physics_tick_rate_seconds
+
+        physics_engine._update_ship_physics(ship, orders, dt)
+
+        # AE should be exactly 0.0, not negative
+        assert ship.ae >= 0.0
+
+
+class TestRotationAECostsPerSubstep:
+    """Test continuous rotation AE costs (Story 023)."""
+
+    def test_rotation_ae_cost_per_substep(self, physics_engine, config):
+        """Verify rotation AE cost applied per substep."""
+        ship = ShipState(
+            position=Vec2D(0.0, 0.0),
+            velocity=Vec2D(0.0, 0.0),
+            heading=0.0,
+            shields=100.0,
+            ae=50.0,  # Start below max to avoid capping
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        )
+
+        orders = Orders(
+            movement=MovementDirection.STOP,  # 0.0 AE/s
+            rotation=RotationCommand.HARD_LEFT,  # 0.33 AE/s
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        dt = config.simulation.physics_tick_rate_seconds
+        expected_cost = config.rotation.hard_turn_ae_per_second * dt
+
+        initial_ae = ship.ae
+
+        physics_engine._update_ship_physics(ship, orders, dt)
+
+        regen = config.ship.ae_regen_per_second * dt
+        expected_ae = initial_ae - expected_cost + regen
+
+        assert ship.ae == pytest.approx(expected_ae, rel=1e-6)
+
+    def test_combined_movement_and_rotation_costs(self, physics_engine, config):
+        """Verify movement + rotation costs combine correctly."""
+        ship = ShipState(
+            position=Vec2D(0.0, 0.0),
+            velocity=Vec2D(0.0, 0.0),
+            heading=0.0,
+            shields=100.0,
+            ae=100.0,
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        )
+
+        # Aggressive maneuver: PERPENDICULAR + HARD_LEFT
+        orders = Orders(
+            movement=MovementDirection.LEFT,  # 0.67 AE/s
+            rotation=RotationCommand.HARD_LEFT,  # 0.33 AE/s
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        dt = config.simulation.physics_tick_rate_seconds
+        movement_cost = config.movement.perpendicular_ae_per_second * dt
+        rotation_cost = config.rotation.hard_turn_ae_per_second * dt
+        regen = config.ship.ae_regen_per_second * dt
+
+        initial_ae = ship.ae
+
+        physics_engine._update_ship_physics(ship, orders, dt)
+
+        expected_ae = initial_ae - movement_cost - rotation_cost + regen
+
+        assert ship.ae == pytest.approx(expected_ae, rel=1e-6)
+
+    def test_rotation_cost_over_full_turn(self, physics_engine, config):
+        """Verify continuous rotation cost equals total turn cost."""
+        ship = ShipState(
+            position=Vec2D(0.0, 0.0),
+            velocity=Vec2D(0.0, 0.0),
+            heading=0.0,
+            shields=100.0,
+            ae=50.0,  # Start below max to avoid capping
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        )
+
+        orders = Orders(
+            movement=MovementDirection.STOP,  # 0.0 AE/s
+            rotation=RotationCommand.SOFT_LEFT,  # 0.13 AE/s (from config)
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        dt = config.simulation.physics_tick_rate_seconds
+        decision_interval = config.simulation.decision_interval_seconds
+        num_substeps = int(decision_interval / dt)
+
+        initial_ae = ship.ae
+
+        for _ in range(num_substeps):
+            physics_engine._update_ship_physics(ship, orders, dt)
+
+        # Net AE change: regen - rotation
+        # Regen: 0.333 AE/s * 15s = 4.995 AE
+        # Rotation: 0.13 AE/s * 15s = 1.95 AE
+        # Net: +3.045 AE
+        decision_interval = config.simulation.decision_interval_seconds
+        rotation_cost = config.rotation.soft_turn_ae_per_second * decision_interval
+        regen = config.ship.ae_regen_per_second * decision_interval
+        expected_ae = initial_ae - rotation_cost + regen
+
+        assert ship.ae == pytest.approx(expected_ae, rel=1e-6)

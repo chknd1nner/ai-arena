@@ -115,20 +115,7 @@ class PhysicsEngine:
         valid_orders_a = self._validate_orders(new_state.ship_a, orders_a)
         valid_orders_b = self._validate_orders(new_state.ship_b, orders_b)
 
-        # 2. Deduct combined AE costs (movement + rotation) - Story 007
-        movement_cost_a = self._get_movement_ae_cost(valid_orders_a.movement) * self.action_phase_duration
-        rotation_cost_a = self._get_rotation_ae_cost(valid_orders_a.rotation) * self.action_phase_duration
-        total_cost_a = movement_cost_a + rotation_cost_a
-
-        movement_cost_b = self._get_movement_ae_cost(valid_orders_b.movement) * self.action_phase_duration
-        rotation_cost_b = self._get_rotation_ae_cost(valid_orders_b.rotation) * self.action_phase_duration
-        total_cost_b = movement_cost_b + rotation_cost_b
-
-        # Deduct combined costs
-        new_state.ship_a.ae = max(0, new_state.ship_a.ae - total_cost_a)
-        new_state.ship_b.ae = max(0, new_state.ship_b.ae - total_cost_b)
-
-        # 3. Apply weapon actions
+        # 2. Apply weapon actions
         weapon_events_a = self._apply_weapon_action(
             new_state, "ship_a", new_state.ship_a, valid_orders_a.weapon_action
         )
@@ -137,8 +124,8 @@ class PhysicsEngine:
         )
         events.extend(weapon_events_a + weapon_events_b)
 
-        # 4. Simulate action phase with fixed timestep
-        # AE regeneration and cooldown decrement now happen per substep in _update_ship_physics()
+        # 3. Simulate action phase with fixed timestep
+        # AE costs, regeneration, and cooldown decrement happen per substep in _update_ship_physics()
         for substep in range(self.substeps):
             self._update_ship_physics(new_state.ship_a, valid_orders_a, self.fixed_timestep)
             self._update_ship_physics(new_state.ship_b, valid_orders_b, self.fixed_timestep)
@@ -149,14 +136,14 @@ class PhysicsEngine:
                     else valid_orders_b.torpedo_orders.get(torpedo.id)
                 self._update_torpedo_physics(torpedo, torpedo_orders, self.fixed_timestep)
 
-        # 5. Check for hits after full action phase
+        # 4. Check for hits after full action phase
         phaser_events = self._check_phaser_hits(new_state)
         events.extend(phaser_events)
 
         torpedo_events = self._check_torpedo_collisions(new_state)
         events.extend(torpedo_events)
 
-        # 6. Clear turn-based flags
+        # 5. Clear turn-based flags
         for torpedo in new_state.torpedoes:
             torpedo.just_launched = False
         new_state.ship_a.reconfiguring_phaser = False
@@ -173,9 +160,17 @@ class PhysicsEngine:
             torpedoes=[TorpedoState(**t.__dict__) for t in state.torpedoes]
         )
 
-    def _get_movement_ae_cost(self, movement: MovementDirection) -> float:
-        """Get AE cost per second for movement direction."""
-        cost_map = {
+    def _get_movement_ae_rate(self, movement: MovementDirection) -> float:
+        """Get AE cost rate for movement direction.
+
+        Args:
+            movement: Movement direction command
+            config: Game configuration
+
+        Returns:
+            AE cost in AE per second
+        """
+        rates = {
             MovementDirection.FORWARD: self.config.movement.forward_ae_per_second,
             MovementDirection.FORWARD_LEFT: self.config.movement.diagonal_ae_per_second,
             MovementDirection.FORWARD_RIGHT: self.config.movement.diagonal_ae_per_second,
@@ -186,18 +181,26 @@ class PhysicsEngine:
             MovementDirection.BACKWARD_RIGHT: self.config.movement.backward_diagonal_ae_per_second,
             MovementDirection.STOP: self.config.movement.stop_ae_per_second,
         }
-        return cost_map[movement]
+        return rates[movement]
 
-    def _get_rotation_ae_cost(self, rotation: RotationCommand) -> float:
-        """Get AE cost per second for rotation command."""
-        cost_map = {
+    def _get_rotation_ae_rate(self, rotation: RotationCommand) -> float:
+        """Get AE cost rate for rotation command.
+
+        Args:
+            rotation: Rotation command
+            config: Game configuration
+
+        Returns:
+            AE cost in AE per second
+        """
+        rates = {
             RotationCommand.NONE: self.config.rotation.none_ae_per_second,
             RotationCommand.SOFT_LEFT: self.config.rotation.soft_turn_ae_per_second,
             RotationCommand.SOFT_RIGHT: self.config.rotation.soft_turn_ae_per_second,
             RotationCommand.HARD_LEFT: self.config.rotation.hard_turn_ae_per_second,
             RotationCommand.HARD_RIGHT: self.config.rotation.hard_turn_ae_per_second,
         }
-        return cost_map[rotation]
+        return rates[rotation]
 
     def _validate_orders(self, ship: ShipState, orders: Orders) -> Orders:
         """Validate orders and adjust if insufficient AE.
@@ -205,8 +208,8 @@ class PhysicsEngine:
         Checks combined cost of movement + rotation.
         If insufficient AE, downgrades to STOP + NONE.
         """
-        movement_cost = self._get_movement_ae_cost(orders.movement) * self.action_phase_duration
-        rotation_cost = self._get_rotation_ae_cost(orders.rotation) * self.action_phase_duration
+        movement_cost = self._get_movement_ae_rate(orders.movement) * self.action_phase_duration
+        rotation_cost = self._get_rotation_ae_rate(orders.rotation) * self.action_phase_duration
         total_cost = movement_cost + rotation_cost
 
         if total_cost > ship.ae:
@@ -272,8 +275,10 @@ class PhysicsEngine:
         1. Apply rotation (changes heading)
         2. Apply movement (sets velocity direction relative to heading)
         3. Update position
-        4. Regenerate AE (Story 021)
-        5. Decrement phaser cooldown (Story 021)
+        4. Apply movement AE cost per substep (Story 022)
+        5. Apply rotation AE cost per substep (Story 023)
+        6. Regenerate AE (Story 021)
+        7. Decrement phaser cooldown (Story 021)
         """
         # 1. Apply rotation (independent of movement)
         rotation_rate_deg_per_sec = self.ROTATION_RATES[orders.rotation]
@@ -298,10 +303,23 @@ class PhysicsEngine:
         # 3. Update position
         ship.position = ship.position + (ship.velocity * dt)
 
-        # 4. Regenerate AE per substep (Story 021)
+        # 4. Apply movement AE cost per substep (Story 022)
+        movement_ae_rate = self._get_movement_ae_rate(orders.movement)
+        ae_cost_movement = movement_ae_rate * dt
+        ship.ae -= ae_cost_movement
+
+        # 5. Apply rotation AE cost per substep (Story 023)
+        rotation_ae_rate = self._get_rotation_ae_rate(orders.rotation)
+        ae_cost_rotation = rotation_ae_rate * dt
+        ship.ae -= ae_cost_rotation
+
+        # 6. Regenerate AE per substep (Story 021)
         self._apply_ae_regeneration(ship, dt)
 
-        # 5. Decrement phaser cooldown per substep (Story 021)
+        # 7. Clamp AE at zero (no negative values)
+        ship.ae = max(0.0, ship.ae)
+
+        # 8. Decrement phaser cooldown per substep (Story 021)
         if ship.phaser_cooldown_remaining > 0.0:
             ship.phaser_cooldown_remaining -= dt
             ship.phaser_cooldown_remaining = max(0.0, ship.phaser_cooldown_remaining)

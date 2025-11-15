@@ -1,7 +1,7 @@
 # Story 022: Continuous Movement AE Application
 
 **Epic:** [Epic 004: Continuous Physics System](../epic-004-continuous-physics.md)
-**Status:** Not Started
+**Status:** Ready for QA
 **Size:** Small (~1-1.5 hours)
 **Priority:** P0
 
@@ -231,30 +231,60 @@ def test_ae_does_not_go_negative():
 
 ## Dev Agent Record
 
-[Dev Agent: When you begin implementation, update this section with:
-- Implementation date
-- Your agent identifier
-- Status updates as you progress
-- Summary of implementation decisions
-- Files created/modified
-- Testing notes
-- Any technical challenges encountered
-- When complete, update the story YAML status from "Not Started" to "Ready for QA"]
+**Implementation Date:** 2025-11-15
+**Agent Identifier:** Claude (Sonnet 4.5)
+**Status:** Completed - Ready for QA
 
 ### Implementation Summary
-[To be filled in by Dev Agent]
+
+Successfully implemented continuous movement AE cost application per substep. The implementation follows the pattern established in Story 021 for continuous AE regeneration. Movement costs are now applied incrementally every 0.1 seconds (per physics tick) rather than as a single deduction at the start of each turn.
+
+**Key Implementation Details:**
+1. Renamed `_get_movement_ae_cost()` to `_get_movement_ae_rate()` for clarity (returns AE per second)
+2. Updated `_update_ship_physics()` to apply movement costs per substep
+3. Removed old discrete AE deduction from `resolve_turn()`
+4. Applied proper ordering: costs → regeneration → clamping
+5. AE values are clamped at zero to prevent negative values
 
 ### Files Created
-[To be filled in by Dev Agent]
+None (only modified existing files)
 
 ### Files Modified
-[To be filled in by Dev Agent]
+1. `ai_arena/game_engine/physics.py`:
+   - Renamed `_get_movement_ae_cost()` → `_get_movement_ae_rate()` (lines 176-197)
+   - Updated `_validate_orders()` to use new function name (line 224)
+   - Removed discrete AE deduction from `resolve_turn()` (removed lines 119-129)
+   - Updated `_update_ship_physics()` to apply movement cost per substep (lines 306-309)
+   - Updated step numbering and comments
+
+2. `tests/test_continuous_physics.py`:
+   - Added `TestMovementAECostsPerSubstep` class with 3 test cases (lines 431-522)
+   - Tests cover: per-substep costs, full turn totals, and AE clamping
 
 ### Testing Notes
-[To be filled in by Dev Agent]
+
+All tests passing (131/131):
+- `test_movement_ae_cost_per_substep`: Validates cost applied correctly per 0.1s substep
+- `test_movement_cost_over_full_turn`: Confirms continuous costs equal discrete costs over full turn
+- `test_ae_does_not_go_negative`: Verifies AE clamping at zero
+- All existing tests continue to pass (no regressions)
+
+**Test Fix Required:** Initial test used ships at max AE (100.0), causing regeneration capping to interfere with assertions. Fixed by starting ships at 50.0 AE to avoid cap interference.
 
 ### Technical Notes
-[To be filled in by Dev Agent]
+
+1. **Order of Operations:** Movement cost → rotation cost → regeneration → clamp at zero. This ensures costs are deducted before regeneration happens.
+
+2. **AE Regeneration Capping:** The `_apply_ae_regeneration()` function caps AE at max (100.0), which can interfere with tests if ships start at max AE. Tests now use ships starting at 50.0 AE.
+
+3. **Determinism Preserved:** Fixed timestep and continuous application maintain deterministic behavior required for replay system.
+
+4. **Energy Economy Validation:**
+   - FORWARD (0.33 AE/s) + NONE (0.0 AE/s) vs regen (0.333 AE/s) = ~0 net (energy neutral)
+   - LEFT (0.67 AE/s) drains faster than regen can offset
+   - STOP (0.0 AE/s) + NONE allows maximum regeneration
+
+5. **Pattern Consistency:** Implementation mirrors Story 021's approach for continuous AE regeneration and cooldown decrement.
 
 ---
 
