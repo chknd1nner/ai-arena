@@ -1,0 +1,428 @@
+"""Tests for continuous physics system (Story 021).
+
+Validates:
+- AE regeneration per substep
+- Phaser cooldown decrement per substep
+- Proper capping (AE at max, cooldown at zero)
+- Determinism (same inputs = same outputs)
+- No NaN or infinity values
+"""
+
+import pytest
+import numpy as np
+from ai_arena.game_engine.physics import PhysicsEngine
+from ai_arena.game_engine.data_models import (
+    GameState,
+    ShipState,
+    Orders,
+    Vec2D,
+    MovementDirection,
+    RotationCommand,
+    PhaserConfig
+)
+from ai_arena.config import ConfigLoader
+
+
+@pytest.fixture
+def config():
+    """Load game configuration for tests."""
+    loader = ConfigLoader()
+    return loader.load("config.json")
+
+
+@pytest.fixture
+def physics_engine(config):
+    """Create physics engine instance."""
+    return PhysicsEngine(config)
+
+
+@pytest.fixture
+def initial_state():
+    """Create initial game state for testing."""
+    return GameState(
+        turn=0,
+        ship_a=ShipState(
+            position=Vec2D(100, 250),
+            velocity=Vec2D(0, 0),
+            heading=0.0,
+            shields=100,
+            ae=50,  # Start with half AE to test regeneration
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        ),
+        ship_b=ShipState(
+            position=Vec2D(900, 250),
+            velocity=Vec2D(0, 0),
+            heading=np.pi,
+            shields=100,
+            ae=50,
+            phaser_config=PhaserConfig.WIDE,
+            phaser_cooldown_remaining=0.0
+        ),
+        torpedoes=[]
+    )
+
+
+class TestAERegenerationPerSubstep:
+    """Test AE regeneration happens per substep."""
+
+    def test_ae_regenerates_continuously(self, physics_engine, initial_state, config):
+        """Verify AE regenerates per substep, not just at end of turn."""
+        # STOP orders mean no movement cost, only regeneration
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        initial_ae = initial_state.ship_a.ae
+        new_state, _ = physics_engine.resolve_turn(initial_state, orders_stop, orders_stop)
+
+        # AE should have increased (regeneration)
+        assert new_state.ship_a.ae > initial_ae
+        assert new_state.ship_b.ae > initial_ae
+
+        # Calculate expected regeneration
+        decision_interval = config.simulation.decision_interval_seconds
+        expected_regen = config.ship.ae_regen_per_second * decision_interval
+        expected_ae = initial_ae + expected_regen
+
+        # Should be close (within floating point precision)
+        assert abs(new_state.ship_a.ae - expected_ae) < 0.01
+        assert abs(new_state.ship_b.ae - expected_ae) < 0.01
+
+    def test_ae_caps_at_maximum(self, physics_engine, config):
+        """Verify AE regeneration caps at maximum (doesn't exceed)."""
+        # Start with near-max AE
+        state = GameState(
+            turn=0,
+            ship_a=ShipState(
+                position=Vec2D(100, 250),
+                velocity=Vec2D(0, 0),
+                heading=0.0,
+                shields=100,
+                ae=99.5,  # Just below max
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=0.0
+            ),
+            ship_b=ShipState(
+                position=Vec2D(900, 250),
+                velocity=Vec2D(0, 0),
+                heading=np.pi,
+                shields=100,
+                ae=99.5,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=0.0
+            ),
+            torpedoes=[]
+        )
+
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        new_state, _ = physics_engine.resolve_turn(state, orders_stop, orders_stop)
+
+        # AE should be capped at max, not exceed it
+        assert new_state.ship_a.ae <= config.ship.max_ae
+        assert new_state.ship_b.ae <= config.ship.max_ae
+        # Should be exactly at max
+        assert abs(new_state.ship_a.ae - config.ship.max_ae) < 0.01
+        assert abs(new_state.ship_b.ae - config.ship.max_ae) < 0.01
+
+    def test_total_regeneration_matches_expected(self, physics_engine, initial_state, config):
+        """Verify total AE regeneration over full turn matches expected value."""
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        initial_ae = initial_state.ship_a.ae
+        new_state, _ = physics_engine.resolve_turn(initial_state, orders_stop, orders_stop)
+
+        # Expected regeneration
+        decision_interval = config.simulation.decision_interval_seconds
+        expected_regen = config.ship.ae_regen_per_second * decision_interval
+
+        actual_regen = new_state.ship_a.ae - initial_ae
+
+        # Should match (within floating point precision)
+        assert abs(actual_regen - expected_regen) < 0.01
+
+
+class TestCooldownDecrementPerSubstep:
+    """Test phaser cooldown decrements per substep."""
+
+    def test_cooldown_decrements_over_turn(self, physics_engine, config):
+        """Verify cooldown decrements continuously over turn."""
+        # Start with cooldown active
+        state = GameState(
+            turn=0,
+            ship_a=ShipState(
+                position=Vec2D(100, 250),
+                velocity=Vec2D(0, 0),
+                heading=0.0,
+                shields=100,
+                ae=100,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=5.0  # Start with 5s cooldown
+            ),
+            ship_b=ShipState(
+                position=Vec2D(900, 250),
+                velocity=Vec2D(0, 0),
+                heading=np.pi,
+                shields=100,
+                ae=100,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=10.0  # Start with 10s cooldown
+            ),
+            torpedoes=[]
+        )
+
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        new_state, _ = physics_engine.resolve_turn(state, orders_stop, orders_stop)
+
+        # Cooldown should have decreased by decision_interval seconds
+        decision_interval = config.simulation.decision_interval_seconds
+        expected_cooldown_a = max(0.0, 5.0 - decision_interval)
+        expected_cooldown_b = max(0.0, 10.0 - decision_interval)
+
+        assert abs(new_state.ship_a.phaser_cooldown_remaining - expected_cooldown_a) < 0.01
+        assert abs(new_state.ship_b.phaser_cooldown_remaining - expected_cooldown_b) < 0.01
+
+    def test_cooldown_caps_at_zero(self, physics_engine, config):
+        """Verify cooldown caps at zero (doesn't go negative)."""
+        # Start with small cooldown that will go past zero
+        state = GameState(
+            turn=0,
+            ship_a=ShipState(
+                position=Vec2D(100, 250),
+                velocity=Vec2D(0, 0),
+                heading=0.0,
+                shields=100,
+                ae=100,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=1.0  # Will go negative if not capped
+            ),
+            ship_b=ShipState(
+                position=Vec2D(900, 250),
+                velocity=Vec2D(0, 0),
+                heading=np.pi,
+                shields=100,
+                ae=100,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=0.5
+            ),
+            torpedoes=[]
+        )
+
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        new_state, _ = physics_engine.resolve_turn(state, orders_stop, orders_stop)
+
+        # Both cooldowns should be zero (not negative)
+        assert new_state.ship_a.phaser_cooldown_remaining == 0.0
+        assert new_state.ship_b.phaser_cooldown_remaining == 0.0
+
+    def test_zero_cooldown_stays_zero(self, physics_engine, initial_state):
+        """Verify zero cooldown stays zero (doesn't go negative)."""
+        # Initial state has zero cooldown
+        assert initial_state.ship_a.phaser_cooldown_remaining == 0.0
+
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        new_state, _ = physics_engine.resolve_turn(initial_state, orders_stop, orders_stop)
+
+        # Should still be zero
+        assert new_state.ship_a.phaser_cooldown_remaining == 0.0
+        assert new_state.ship_b.phaser_cooldown_remaining == 0.0
+
+
+class TestDeterminism:
+    """Test that physics is deterministic (same inputs = same outputs)."""
+
+    def test_identical_runs_produce_identical_results(self, physics_engine, initial_state):
+        """Run same scenario 5 times, verify identical results."""
+        orders_forward = Orders(
+            movement=MovementDirection.FORWARD,
+            rotation=RotationCommand.SOFT_LEFT,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        results = []
+        for _ in range(5):
+            new_state, events = physics_engine.resolve_turn(
+                initial_state, orders_forward, orders_forward
+            )
+            results.append({
+                'ship_a_pos': (new_state.ship_a.position.x, new_state.ship_a.position.y),
+                'ship_a_heading': new_state.ship_a.heading,
+                'ship_a_ae': new_state.ship_a.ae,
+                'ship_a_cooldown': new_state.ship_a.phaser_cooldown_remaining,
+                'ship_b_pos': (new_state.ship_b.position.x, new_state.ship_b.position.y),
+                'ship_b_heading': new_state.ship_b.heading,
+                'ship_b_ae': new_state.ship_b.ae,
+                'ship_b_cooldown': new_state.ship_b.phaser_cooldown_remaining,
+            })
+
+        # All runs should produce identical results
+        for i in range(1, 5):
+            assert results[i] == results[0], f"Run {i+1} differs from run 1"
+
+
+class TestNoInvalidValues:
+    """Test that physics never produces NaN or infinity values."""
+
+    def test_no_nan_or_infinity_in_positions(self, physics_engine, initial_state):
+        """Verify positions never become NaN or infinity."""
+        orders_forward = Orders(
+            movement=MovementDirection.FORWARD,
+            rotation=RotationCommand.HARD_LEFT,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        # Run multiple turns
+        state = initial_state
+        for _ in range(10):
+            state, _ = physics_engine.resolve_turn(state, orders_forward, orders_forward)
+
+            # Check ship positions
+            assert not np.isnan(state.ship_a.position.x)
+            assert not np.isnan(state.ship_a.position.y)
+            assert not np.isinf(state.ship_a.position.x)
+            assert not np.isinf(state.ship_a.position.y)
+
+            assert not np.isnan(state.ship_b.position.x)
+            assert not np.isnan(state.ship_b.position.y)
+            assert not np.isinf(state.ship_b.position.x)
+            assert not np.isinf(state.ship_b.position.y)
+
+    def test_no_nan_or_infinity_in_ae(self, physics_engine, initial_state):
+        """Verify AE values never become NaN or infinity."""
+        orders_forward = Orders(
+            movement=MovementDirection.FORWARD,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        # Run multiple turns
+        state = initial_state
+        for _ in range(10):
+            state, _ = physics_engine.resolve_turn(state, orders_forward, orders_forward)
+
+            # Check AE values
+            assert not np.isnan(state.ship_a.ae)
+            assert not np.isinf(state.ship_a.ae)
+            assert not np.isnan(state.ship_b.ae)
+            assert not np.isinf(state.ship_b.ae)
+
+    def test_no_nan_or_infinity_in_cooldown(self, physics_engine, config):
+        """Verify cooldown values never become NaN or infinity."""
+        state = GameState(
+            turn=0,
+            ship_a=ShipState(
+                position=Vec2D(100, 250),
+                velocity=Vec2D(0, 0),
+                heading=0.0,
+                shields=100,
+                ae=100,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=3.5
+            ),
+            ship_b=ShipState(
+                position=Vec2D(900, 250),
+                velocity=Vec2D(0, 0),
+                heading=np.pi,
+                shields=100,
+                ae=100,
+                phaser_config=PhaserConfig.WIDE,
+                phaser_cooldown_remaining=7.0
+            ),
+            torpedoes=[]
+        )
+
+        orders_stop = Orders(
+            movement=MovementDirection.STOP,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        # Run multiple turns
+        for _ in range(10):
+            state, _ = physics_engine.resolve_turn(state, orders_stop, orders_stop)
+
+            # Check cooldown values
+            assert not np.isnan(state.ship_a.phaser_cooldown_remaining)
+            assert not np.isinf(state.ship_a.phaser_cooldown_remaining)
+            assert not np.isnan(state.ship_b.phaser_cooldown_remaining)
+            assert not np.isinf(state.ship_b.phaser_cooldown_remaining)
+
+
+class TestContinuousPhysicsIntegration:
+    """Integration tests for continuous physics system."""
+
+    def test_movement_with_regeneration(self, physics_engine, initial_state, config):
+        """Test that movement costs and regeneration work together correctly."""
+        # Forward movement costs 0.33 AE/s, regen is 0.333 AE/s
+        # Net should be approximately zero
+        orders_forward = Orders(
+            movement=MovementDirection.FORWARD,
+            rotation=RotationCommand.NONE,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        initial_ae = initial_state.ship_a.ae
+        new_state, _ = physics_engine.resolve_turn(initial_state, orders_forward, orders_forward)
+
+        # Note: Movement cost is deducted upfront, then regen happens per substep
+        # So final AE = initial - (cost * duration) + (regen * duration)
+        decision_interval = config.simulation.decision_interval_seconds
+        movement_cost = config.movement.forward_ae_per_second * decision_interval
+        regen = config.ship.ae_regen_per_second * decision_interval
+
+        expected_ae = initial_ae - movement_cost + regen
+
+        # Should be close to expected (net is nearly zero for FORWARD + NONE)
+        assert abs(new_state.ship_a.ae - expected_ae) < 0.1
+
+    def test_aggressive_maneuver_drains_ae(self, physics_engine, initial_state, config):
+        """Test that aggressive maneuvers drain AE despite regeneration."""
+        # Perpendicular movement (0.67 AE/s) + hard rotation (0.33 AE/s) = 1.0 AE/s
+        # Regen is 0.333 AE/s, so net is -0.667 AE/s
+        orders_aggressive = Orders(
+            movement=MovementDirection.LEFT,
+            rotation=RotationCommand.HARD_LEFT,
+            weapon_action="MAINTAIN_CONFIG"
+        )
+
+        initial_ae = initial_state.ship_a.ae
+        new_state, _ = physics_engine.resolve_turn(initial_state, orders_aggressive, orders_aggressive)
+
+        # AE should have decreased
+        assert new_state.ship_a.ae < initial_ae
+
+        # Calculate expected net drain
+        decision_interval = config.simulation.decision_interval_seconds
+        movement_cost = config.movement.perpendicular_ae_per_second * decision_interval
+        rotation_cost = config.rotation.hard_turn_ae_per_second * decision_interval
+        regen = config.ship.ae_regen_per_second * decision_interval
+
+        expected_ae = initial_ae - movement_cost - rotation_cost + regen
+
+        assert abs(new_state.ship_a.ae - expected_ae) < 0.1

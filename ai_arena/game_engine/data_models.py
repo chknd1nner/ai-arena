@@ -89,6 +89,14 @@ class ShipState:
     ae: int                   # 0-100
     phaser_config: PhaserConfig
     reconfiguring_phaser: bool = False
+    phaser_cooldown_remaining: float = 0.0  # seconds until can fire again
+
+    def __post_init__(self):
+        """Validate ship state fields."""
+        if self.phaser_cooldown_remaining < 0.0:
+            raise ValueError(
+                f"phaser_cooldown_remaining must be >= 0.0, got {self.phaser_cooldown_remaining}"
+            )
 
 @dataclass
 class TorpedoState:
