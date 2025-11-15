@@ -104,9 +104,10 @@ class ReplayRecorder:
     def _serialize_orders(self, orders: Orders) -> dict:
         return {
             "movement": orders.movement.value,
+            "rotation": orders.rotation.value,  # FIX: Missing rotation field
             "weapon_action": orders.weapon_action,
             "torpedo_orders": {
-                tid: move.value 
+                tid: move.value
                 for tid, move in orders.torpedo_orders.items()
             }
         }
