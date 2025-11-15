@@ -125,17 +125,30 @@ class ReplayRecorder:
 
 class ReplayLoader:
     """Loads replay files for visualization."""
-    
+
     @staticmethod
     def load(match_id: str) -> dict:
         """Load replay from file."""
-        replay_path = Path("replays") / f"{match_id}.json"
-        
-        if not replay_path.exists():
-            raise FileNotFoundError(f"Replay not found: {match_id}")
-        
-        with open(replay_path, 'r') as f:
-            return json.load(f)
+        replay_dir = Path("replays")
+
+        # First, try direct filename match (for new replays)
+        replay_path = replay_dir / f"{match_id}.json"
+        if replay_path.exists():
+            with open(replay_path, 'r') as f:
+                return json.load(f)
+
+        # If not found, search for file containing this match_id (for old replays)
+        if replay_dir.exists():
+            for replay_file in replay_dir.glob("*.json"):
+                try:
+                    with open(replay_file, 'r') as f:
+                        data = json.load(f)
+                        if data.get("match_id") == match_id:
+                            return data
+                except Exception:
+                    pass
+
+        raise FileNotFoundError(f"Replay not found: {match_id}")
     
     @staticmethod
     def list_matches() -> List[dict]:
@@ -143,20 +156,37 @@ class ReplayLoader:
         replay_dir = Path("replays")
         if not replay_dir.exists():
             return []
-        
+
         matches = []
         for replay_file in sorted(replay_dir.glob("*.json"), key=os.path.getmtime, reverse=True):
             try:
                 with open(replay_file, 'r') as f:
                     data = json.load(f)
+
+                # Handle both old and new replay formats
+                if "models" in data:
+                    models = data["models"]
+                else:
+                    # Old format with model_a and model_b at top level
+                    models = {
+                        "ship_a": data.get("model_a", "Unknown"),
+                        "ship_b": data.get("model_b", "Unknown")
+                    }
+
+                # Get created_at, fallback to timestamp for old replays
+                created_at = data.get("created_at", data.get("timestamp", ""))
+
+                # Get total_turns, fallback to len(turns) for old replays
+                total_turns = data.get("total_turns", len(data.get("turns", [])))
+
                 matches.append({
                     "match_id": data["match_id"],
-                    "models": data["models"],
+                    "models": models,
                     "winner": data["winner"],
-                    "total_turns": data["total_turns"],
-                    "created_at": data["created_at"]
+                    "total_turns": total_turns,
+                    "created_at": created_at
                 })
             except Exception as e:
                 print(f"Error loading {replay_file}: {e}")
-        
+
         return matches
