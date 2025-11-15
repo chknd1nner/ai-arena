@@ -1,0 +1,112 @@
+diff --git a/ai_arena/game_engine/physics.py b/ai_arena/game_engine/physics.py
+index 21b0fcf..2bd9c46 100644
+--- a/ai_arena/game_engine/physics.py
++++ b/ai_arena/game_engine/physics.py
+@@ -138,6 +138,7 @@ class PhysicsEngine:
+         events.extend(weapon_events_a + weapon_events_b)
+ 
+         # 4. Simulate action phase with fixed timestep
++        # AE regeneration and cooldown decrement now happen per substep in _update_ship_physics()
+         for substep in range(self.substeps):
+             self._update_ship_physics(new_state.ship_a, valid_orders_a, self.fixed_timestep)
+             self._update_ship_physics(new_state.ship_b, valid_orders_b, self.fixed_timestep)
+@@ -147,24 +148,14 @@ class PhysicsEngine:
+                     if torpedo.owner == "ship_a" \
+                     else valid_orders_b.torpedo_orders.get(torpedo.id)
+                 self._update_torpedo_physics(torpedo, torpedo_orders, self.fixed_timestep)
+-        
+-        # 4. Check for hits after full action phase
++
++        # 5. Check for hits after full action phase
+         phaser_events = self._check_phaser_hits(new_state)
+         events.extend(phaser_events)
+-        
++
+         torpedo_events = self._check_torpedo_collisions(new_state)
+         events.extend(torpedo_events)
+-        
+-        # 5. Regenerate AE
+-        new_state.ship_a.ae = min(
+-            new_state.ship_a.ae + self.ae_regen_per_turn,
+-            self.config.ship.max_ae
+-        )
+-        new_state.ship_b.ae = min(
+-            new_state.ship_b.ae + self.ae_regen_per_turn,
+-            self.config.ship.max_ae
+-        )
+-        
++
+         # 6. Clear turn-based flags
+         for torpedo in new_state.torpedoes:
+             torpedo.just_launched = False
+@@ -259,6 +250,21 @@ class PhysicsEngine:
+ 
+         return events
+ 
++    def _apply_ae_regeneration(self, ship: ShipState, dt: float):
++        """Apply AE regeneration for one substep.
++
++        Regenerates AE continuously per substep, capping at maximum AE.
++        Part of Story 021: Continuous AE tracking system.
++
++        Args:
++            ship: Ship to regenerate AE for
++            dt: Time delta in seconds for this substep
++        """
++        regen_amount = self.config.ship.ae_regen_per_second * dt
++        ship.ae += regen_amount
++        # Cap AE at maximum
++        ship.ae = min(ship.ae, self.config.ship.max_ae)
++
+     def _update_ship_physics(self, ship: ShipState, orders: Orders, dt: float):
+         """Update ship position and heading for one timestep.
+ 
+@@ -266,6 +272,8 @@ class PhysicsEngine:
+         1. Apply rotation (changes heading)
+         2. Apply movement (sets velocity direction relative to heading)
+         3. Update position
++        4. Regenerate AE (Story 021)
++        5. Decrement phaser cooldown (Story 021)
+         """
+         # 1. Apply rotation (independent of movement)
+         rotation_rate_deg_per_sec = self.ROTATION_RATES[orders.rotation]
+@@ -276,21 +284,28 @@ class PhysicsEngine:
+         # 2. Apply movement (independent of rotation)
+         if orders.movement == MovementDirection.STOP:
+             ship.velocity = Vec2D(0, 0)
+-            return
+-
+-        # Calculate velocity direction (heading + movement offset)
+-        movement_offset = self.MOVEMENT_DIRECTION_OFFSETS[orders.movement]
+-        velocity_angle = ship.heading + movement_offset
+-
+-        # Set velocity based on movement direction
+-        ship.velocity = Vec2D(
+-            np.cos(velocity_angle) * self.ship_speed,
+-            np.sin(velocity_angle) * self.ship_speed
+-        )
++        else:
++            # Calculate velocity direction (heading + movement offset)
++            movement_offset = self.MOVEMENT_DIRECTION_OFFSETS[orders.movement]
++            velocity_angle = ship.heading + movement_offset
++
++            # Set velocity based on movement direction
++            ship.velocity = Vec2D(
++                np.cos(velocity_angle) * self.ship_speed,
++                np.sin(velocity_angle) * self.ship_speed
++            )
+ 
+         # 3. Update position
+         ship.position = ship.position + (ship.velocity * dt)
+ 
++        # 4. Regenerate AE per substep (Story 021)
++        self._apply_ae_regeneration(ship, dt)
++
++        # 5. Decrement phaser cooldown per substep (Story 021)
++        if ship.phaser_cooldown_remaining > 0.0:
++            ship.phaser_cooldown_remaining -= dt
++            ship.phaser_cooldown_remaining = max(0.0, ship.phaser_cooldown_remaining)
++
+     def _update_torpedo_physics(self, torpedo: TorpedoState, movement: Optional[MovementType], dt: float):
+         if torpedo.just_launched:
+             pass # No turning on launch turn

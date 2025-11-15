@@ -1,0 +1,28 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/martinkuek/Documents/Projects/ai-arena
+plugins: anyio-4.11.0
+collecting ... collected 19 items
+
+tests/test_continuous_physics.py::TestAERegenerationPerSubstep::test_ae_regenerates_continuously PASSED [  5%]
+tests/test_continuous_physics.py::TestAERegenerationPerSubstep::test_ae_caps_at_maximum PASSED [ 10%]
+tests/test_continuous_physics.py::TestAERegenerationPerSubstep::test_total_regeneration_matches_expected PASSED [ 15%]
+tests/test_continuous_physics.py::TestCooldownDecrementPerSubstep::test_cooldown_decrements_over_turn PASSED [ 21%]
+tests/test_continuous_physics.py::TestCooldownDecrementPerSubstep::test_cooldown_caps_at_zero PASSED [ 26%]
+tests/test_continuous_physics.py::TestCooldownDecrementPerSubstep::test_zero_cooldown_stays_zero PASSED [ 31%]
+tests/test_continuous_physics.py::TestDeterminism::test_identical_runs_produce_identical_results PASSED [ 36%]
+tests/test_continuous_physics.py::TestNoInvalidValues::test_no_nan_or_infinity_in_positions PASSED [ 42%]
+tests/test_continuous_physics.py::TestNoInvalidValues::test_no_nan_or_infinity_in_ae PASSED [ 47%]
+tests/test_continuous_physics.py::TestNoInvalidValues::test_no_nan_or_infinity_in_cooldown PASSED [ 52%]
+tests/test_continuous_physics.py::TestContinuousPhysicsIntegration::test_movement_with_regeneration PASSED [ 57%]
+tests/test_continuous_physics.py::TestContinuousPhysicsIntegration::test_aggressive_maneuver_drains_ae PASSED [ 63%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_field_exists PASSED [ 68%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_default_value PASSED [ 73%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_can_be_set PASSED [ 78%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_rejects_negative PASSED [ 84%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_accepts_zero PASSED [ 89%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_accepts_large_values PASSED [ 94%]
+tests/test_data_models.py::TestShipStateCooldown::test_cooldown_serialization PASSED [100%]
+
+============================== 19 passed in 0.11s ==============================
