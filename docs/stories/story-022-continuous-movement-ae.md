@@ -231,17 +231,55 @@ def test_ae_does_not_go_negative():
 
 ## Dev Agent Record
 
-**Implementation Date:** [To be filled in by Dev Agent]
-**Agent:** [To be filled in by Dev Agent]
-**Status:** [To be filled in by Dev Agent]
+[Dev Agent: When you begin implementation, update this section with:
+- Implementation date
+- Your agent identifier
+- Status updates as you progress
+- Summary of implementation decisions
+- Files created/modified
+- Testing notes
+- Any technical challenges encountered
+- When complete, update the story YAML status from "Not Started" to "Ready for QA"]
+
+### Implementation Summary
+[To be filled in by Dev Agent]
+
+### Files Created
+[To be filled in by Dev Agent]
+
+### Files Modified
+[To be filled in by Dev Agent]
+
+### Testing Notes
+[To be filled in by Dev Agent]
+
+### Technical Notes
+[To be filled in by Dev Agent]
 
 ---
 
 ## QA Agent Record
 
+[QA Agent: After dev implementation is complete:
+- Validate all acceptance criteria
+- Run all tests and verify they pass
+- Check code quality and adherence to patterns
+- Document any issues found
+- If all checks pass, update YAML status to "Completed"
+- If issues found, update YAML status to "Remediation needed" and document issues]
+
 **Validation Date:** [To be filled in by QA Agent]
 **Validator:** [To be filled in by QA Agent]
 **Verdict:** [To be filled in by QA Agent]
+
+### Acceptance Criteria Validation
+[To be filled in by QA Agent]
+
+### Test Results
+[To be filled in by QA Agent]
+
+### Issues Found
+[To be filled in by QA Agent]
 
 ---
 
