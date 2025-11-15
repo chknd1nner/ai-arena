@@ -86,7 +86,8 @@ class ReplayRecorder:
             "shields": ship.shields,
             "ae": ship.ae,
             "phaser_config": ship.phaser_config.value,
-            "reconfiguring_phaser": ship.reconfiguring_phaser
+            "reconfiguring_phaser": ship.reconfiguring_phaser,
+            "phaser_cooldown_remaining": ship.phaser_cooldown_remaining
         }
     
     def _serialize_torpedo(self, torpedo: TorpedoState) -> dict:

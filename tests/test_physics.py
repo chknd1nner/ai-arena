@@ -103,10 +103,11 @@ def test_torpedo_launch(engine, config):
     assert len(new_state.torpedoes) == 1
     assert new_state.torpedoes[0].owner == "ship_a"
     # Check AE: start - launch_cost + regen
-    # 100 - 20 + int(0.333 * 15) = 84
-    ae_regen = int(config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds)
+    # With continuous physics: 100 - 20 + (0.333 * 15) = 84.995 (Story 021)
+    ae_regen = config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds
     expected_ae = 100 - config.torpedo.launch_cost_ae + ae_regen
-    assert new_state.ship_a.ae == expected_ae
+    # Use floating-point comparison (Story 021: continuous AE regeneration)
+    assert abs(new_state.ship_a.ae - expected_ae) < 0.01
 
 
 # Helper function for creating test states

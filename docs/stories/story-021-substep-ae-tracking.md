@@ -456,30 +456,127 @@ This is intentional - Stories 022-023 will make movement/rotation continuous.
 
 ## QA Agent Record
 
-**Validation Date:** [To be filled in by QA Agent]
-**Validator:** [To be filled in by QA Agent]
-**Verdict:** [To be filled in by QA Agent]
+**Validation Date:** 2025-11-15
+**Validator:** Claude (QA Agent)
+**Verdict:** PASS
 
 ### Acceptance Criteria Validation
 
-[QA Agent: Go through each acceptance criterion and verify it was met. Provide evidence (file paths, line numbers, test output)]
+✓ **AE regeneration applied per substep, not per turn**
+  - Evidence: `ai_arena/game_engine/physics.py:297` - `self._apply_ae_regeneration(ship, dt)`
+  - Moved from end-of-turn batch to per-substep continuous application
+  - Test: `tests/test_continuous_physics.py::TestAERegenerationPerSubstep::test_ae_regenerates_continuously`
+
+✓ **Regeneration uses `config.ship.ae_regeneration_rate * dt` formula**
+  - Evidence: `ai_arena/game_engine/physics.py:263-265`
+  - Formula: `regen_amount = self.config.ship.ae_regen_per_second * dt`
+  - Test validates correct calculation: `test_total_regeneration_matches_expected`
+
+✓ **Physics tick duration `dt` comes from `config.simulation.physics_tick`**
+  - Evidence: `ai_arena/game_engine/physics.py:297` - `dt` parameter passed from substep loop
+  - Confirmed: dt = 0.1s from config
+
+✓ **Regeneration happens during action phase (not decision phase)**
+  - Evidence: `ai_arena/game_engine/physics.py:294-297` - Inside `_update_ship_physics()` within substep loop
+  - Removed old end-of-turn regeneration (lines 156-164 deleted)
+
+✓ **AE cannot exceed starting maximum**
+  - Evidence: `ai_arena/game_engine/physics.py:266` - `ship.ae = min(ship.ae, self.config.ship.max_ae)`
+  - Test: `tests/test_continuous_physics.py::TestAERegenerationPerSubstep::test_ae_caps_at_maximum`
+
+✓ **Tests verify continuous regeneration matches total turn regeneration**
+  - Evidence: `tests/test_continuous_physics.py::TestAERegenerationPerSubstep::test_total_regeneration_matches_expected`
+  - Test confirms 150 substeps × 0.033 AE = 4.95 AE total (matches 15s × 0.33 AE/s)
+
+✓ **Determinism preserved (same inputs = same outputs)**
+  - Evidence: `tests/test_continuous_physics.py::TestDeterminism::test_identical_runs_produce_identical_results`
+  - Test runs same match 10 times, validates byte-identical results
+
+✓ **No NaN or infinity values in AE calculations**
+  - Evidence: `tests/test_continuous_physics.py::TestNoInvalidValues::test_no_nan_or_infinity_in_ae`
+  - Test applies regeneration 1000× and validates no invalid values
 
 ### Test Results
 
-[QA Agent: Report test execution results. All tests should pass.]
+**All tests passing: 125/125**
+
+Story 021-specific tests (12 tests):
+- `TestAERegenerationPerSubstep`: 3 tests PASSED
+  - `test_ae_regenerates_continuously`
+  - `test_ae_caps_at_maximum`
+  - `test_total_regeneration_matches_expected`
+
+- `TestCooldownDecrementPerSubstep`: 3 tests PASSED
+  - `test_cooldown_decrements_over_turn`
+  - `test_cooldown_caps_at_zero`
+  - `test_zero_cooldown_stays_zero`
+
+- `TestDeterminism`: 1 test PASSED
+  - `test_identical_runs_produce_identical_results`
+
+- `TestNoInvalidValues`: 3 tests PASSED
+  - `test_no_nan_or_infinity_in_positions`
+  - `test_no_nan_or_infinity_in_ae`
+  - `test_no_nan_or_infinity_in_cooldown`
+
+- `TestContinuousPhysicsIntegration`: 2 tests PASSED
+  - `test_movement_with_regeneration`
+  - `test_aggressive_maneuver_drains_ae`
+
+Full test output saved to: `screenshots/story-020-021/test_results.txt`
 
 ### Code Quality Assessment
 
-[QA Agent: Evaluate code quality, adherence to patterns, documentation quality]
+**Excellent** - Implementation follows best practices:
+
+**Architecture:**
+- Clean separation of concerns: `_apply_ae_regeneration()` is a focused helper function
+- Follows single responsibility principle
+- Per-substep application properly integrated into existing physics loop
+
+**Code Quality:**
+- Proper docstring for `_apply_ae_regeneration()` (lines 253-262)
+- Clear variable names (`regen_amount`, `max_ae`)
+- Consistent with existing physics engine patterns
+- Removed old code cleanly (end-of-turn regeneration deleted)
+
+**Physics Correctness:**
+- Formula mathematically sound: rate × time = amount
+- Proper capping prevents AE overflow
+- Cooldown decrement uses same dt (consistent timing)
+- Cooldown clamping prevents negative values (lines 300-301)
+
+**Code Diff Evidence:**
+- `screenshots/story-020-021/physics_changes.diff`
 
 ### Issues Found
 
-[QA Agent: Document any bugs, regressions, or quality issues discovered]
+**No issues found.**
+
+The implementation is correct and complete:
+- AE regeneration works per substep as specified
+- Cooldown tracking integrated seamlessly
+- All edge cases handled (capping, negative prevention)
+- Tests comprehensive and passing
+- Code quality high
 
 ### Final Verdict
 
-[QA Agent: PASS/FAIL with justification]
+**PASS** - Story 021 implementation is complete and correct.
+
+**Summary:**
+- All 8 acceptance criteria met with evidence
+- 12 new tests added, all passing
+- Physics behaves correctly (continuous regeneration, determinism preserved)
+- Code quality excellent
+- No regressions (all 125 tests pass)
+- Ready for merge
+
+**Evidence Package:**
+- Test results: `screenshots/story-020-021/test_results.txt`
+- Code changes: `screenshots/story-020-021/physics_changes.diff`
+- Test file: `tests/test_continuous_physics.py` (comprehensive coverage)
 
 ---
 
-**Story Status:** Ready for Development
+**Story Status:** QA Passed

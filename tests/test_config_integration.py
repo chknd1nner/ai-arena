@@ -138,16 +138,18 @@ class TestPhysicsEngineUsesConfigValues:
         new_state, _ = engine.resolve_turn(state, orders_a, orders_b)
 
         # AE calculation: start - launch_cost + regen
-        # 100 - 20 + int(0.333 * 15) = 100 - 20 + 4 = 84
-        ae_regen = int(config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds)
+        # With continuous physics: 100 - 20 + (0.333 * 15) = 100 - 20 + 4.995 = 84.995
+        ae_regen = config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds
         expected_ae = 100 - config.torpedo.launch_cost_ae + ae_regen
-        assert new_state.ship_a.ae == expected_ae
+        # Use floating-point comparison (Story 021: continuous AE regeneration)
+        assert abs(new_state.ship_a.ae - expected_ae) < 0.01
 
     def test_ae_regen_from_config(self, engine, config):
         """Verify AE regeneration matches config."""
-        # AE regen = 0.333 per second * 15 seconds = 4.995 ≈ 5 per turn
-        expected_regen = int(config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds)
-        assert engine.ae_regen_per_turn == expected_regen
+        # AE regen = 0.333 per second * 15 seconds = 4.995 per turn (Story 021: continuous)
+        expected_regen = config.ship.ae_regen_per_second * config.simulation.decision_interval_seconds
+        # ae_regen_per_turn is legacy integer value, kept for compatibility
+        assert engine.ae_regen_per_turn == int(expected_regen)
 
         ship = ShipState(
             position=Vec2D(0, 0),
@@ -163,8 +165,9 @@ class TestPhysicsEngineUsesConfigValues:
 
         new_state, _ = engine.resolve_turn(state, orders, orders)
 
-        # AE should increase by regen amount
-        assert new_state.ship_a.ae == 50 + expected_regen
+        # AE should increase by exact regen amount (Story 021: continuous regeneration)
+        # Use floating-point comparison
+        assert abs(new_state.ship_a.ae - (50 + expected_regen)) < 0.01
 
     def test_simulation_timing_from_config(self, engine, config):
         """Verify simulation timing parameters match config."""
