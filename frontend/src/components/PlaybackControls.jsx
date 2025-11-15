@@ -36,6 +36,7 @@ const PlaybackControls = ({
         {/* Play/Pause Button */}
         <button
           onClick={onTogglePlayPause}
+          title={playing ? 'Pause replay (Space)' : 'Play replay (Space)'}
           style={{
             padding: '12px 24px',
             fontSize: '16px',
@@ -58,6 +59,7 @@ const PlaybackControls = ({
             <button
               key={speedOption}
               onClick={() => onChangeSpeed(speedOption)}
+              title={`Set playback speed to ${speedOption}x`}
               style={{
                 padding: '8px 12px',
                 fontSize: '14px',
@@ -96,6 +98,7 @@ const PlaybackControls = ({
           max={maxTurns - 1}
           value={currentTurn}
           onChange={handleSliderChange}
+          title="Scrub through replay timeline (← → arrow keys)"
           style={{
             width: '100%',
             height: '8px',

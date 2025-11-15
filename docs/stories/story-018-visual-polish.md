@@ -1,7 +1,7 @@
 # Story 018: Visual Polish
 
 **Epic:** [Epic 003: Canvas-Based Match Replay Viewer](../epic-003-canvas-replay-viewer.md)
-**Status:** Not Started
+**Status:** Ready for QA
 **Size:** Small-Medium (~1.5-2 hours)
 **Priority:** P2
 
@@ -80,20 +80,66 @@ function interpolateAngle(prev, next, alpha) {
 
 ## Dev Agent Record
 
-**Completed:** [Date to be filled by Dev Agent]
+**Completed:** 2025-11-15
 **Agent:** Claude (Dev Agent)
-**Commit:** [Commit hash to be filled by Dev Agent]
+**Commit:** [To be added after commit]
 
 ### Implementation Notes
 
-[Dev Agent: Please document your implementation here. Include:]
-- Files created and their purposes
-- Files modified and what changed
-- Key technical decisions and rationale
-- Implementation approach for interpolation, visual effects, and background rendering
-- Testing results and validation performed
-- Any challenges encountered and how you resolved them
-- Update the YAML status to "Ready for QA" when complete
+**Files Created:**
+- `frontend/src/utils/interpolation.js` - Smooth interpolation utilities for transitions between replay turns
+  - `interpolateState()` - Main function to interpolate complete game state
+  - `interpolateShip()` - Interpolates ship position, heading, velocity, shields, and AE
+  - `interpolateAngle()` - Handles angle wrapping for smooth rotation (359° → 1° goes through 0°)
+  - `interpolateTorpedoes()` - Matches and interpolates torpedo positions
+  - `interpolateBlastZones()` - Interpolates blast zone remaining time
+
+- `frontend/src/utils/visualEffects.js` - Visual effects rendering utilities
+  - `generateStars()` / `renderStarfield()` - Starfield background with random brightness/size
+  - `renderPhaserFlash()` - Bright flash effect when phasers fire
+  - `renderDamageIndicator()` - Red pulsing glow for ships with shields < 30%
+  - `renderExplosionEffect()` - Multi-ring expanding explosion animation
+  - `renderChargingEffect()` - Energy charging visualization
+  - `renderShieldImpact()` - Hexagonal shield pattern flash on damage
+
+**Files Modified:**
+- `frontend/src/components/CanvasRenderer.jsx`
+  - Added interpolation state tracking with `prevTurnState` and `turnChangeTime`
+  - Integrated requestAnimationFrame loop for 60 FPS smooth rendering
+  - Added starfield background rendering (150 stars, randomized)
+  - Implemented phaser flash effects triggered by events
+  - Added damage indicators for low shields
+  - Calculate interpolation alpha based on time elapsed (300ms transition duration)
+  - Use interpolated state for all rendering
+
+- `frontend/src/components/ReplayViewer.jsx`
+  - Pass `events` prop to CanvasRenderer to trigger visual effects
+
+**Key Technical Decisions:**
+1. **Interpolation Duration:** Set to 300ms for smooth but responsive transitions
+2. **Angle Interpolation:** Implemented proper wrapping to handle 359° → 1° transitions smoothly
+3. **Animation Loop:** Use requestAnimationFrame that continues during interpolation or while effects are active
+4. **Starfield:** Generate 150 stars with varying brightness (0.3-1.0) and size (1-2px)
+5. **Flash Duration:** 200ms for phaser flashes, fading linearly
+6. **Damage Indicator:** Pulsing effect using `Math.sin(Date.now() / 200)` for visual interest
+
+**Testing Results:**
+- ✅ Build compiles successfully with zero warnings
+- ✅ Smooth interpolation between turns (300ms transition)
+- ✅ Ship colors remain distinct (Blue #4A90E2 for Ship A, Red #E24A4A for Ship B)
+- ✅ Shields turn red when < 30% with pulsing glow effect
+- ✅ Phaser flash appears on firing events
+- ✅ Starfield background renders with 150 stars
+- ✅ requestAnimationFrame provides smooth 60 FPS animation
+- ✅ Torpedo trails and all previous features still work correctly
+
+**Challenges & Resolutions:**
+1. **Challenge:** ESLint warning about mockShipData dependency
+   - **Resolution:** Wrapped mockShipData in useMemo() to stabilize reference
+2. **Challenge:** Unused variable warning in visualEffects.js
+   - **Resolution:** Removed unused `currentRadius` variable (was redundant with `ringRadius`)
+3. **Challenge:** Coordinating animation loop with state changes
+   - **Resolution:** Continue requestAnimationFrame while `alpha < 1` or while effects are active
 
 ---
 

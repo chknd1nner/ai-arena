@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import CanvasRenderer from './components/CanvasRenderer';
 import ReplayViewer from './components/ReplayViewer';
+import MatchSelector from './components/MatchSelector';
 
 function App() {
   const [matches, setMatches] = useState([]);
@@ -68,9 +69,15 @@ function App() {
           </button>
         </section>
 
+        {/* Match Selector for Real Matches */}
+        <MatchSelector
+          onSelectMatch={(matchId) => setSelectedReplay(matchId)}
+          selectedMatchId={selectedReplay}
+        />
+
         {/* Test Replay Buttons */}
         <section style={{ marginTop: '20px', padding: '15px', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
-          <h3 style={{ color: '#fff', marginTop: 0 }}>Load Test Replays:</h3>
+          <h3 style={{ color: '#fff', marginTop: 0 }}>Or Load Test Replays:</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button
               onClick={() => setSelectedReplay('test_strafing_maneuver')}
