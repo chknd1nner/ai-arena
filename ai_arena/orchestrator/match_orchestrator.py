@@ -14,7 +14,7 @@ class MatchOrchestrator:
         self.config = ConfigLoader().load("config.json")
 
         # Initialize components with config
-        self.llm_adapter = LLMAdapter(model_a, model_b)
+        self.llm_adapter = LLMAdapter(model_a, model_b, self.config)
         self.physics_engine = PhysicsEngine(self.config)
         self.replay_recorder = ReplayRecorder(model_a, model_b)
 

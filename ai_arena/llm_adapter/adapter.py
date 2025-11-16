@@ -13,6 +13,7 @@ from ai_arena.game_engine.data_models import (
     GameState, Orders, MovementType, MovementDirection, RotationCommand,
     ShipState, Vec2D, PhaserConfig
 )
+from ai_arena.config import GameConfig
 
 load_dotenv()
 
@@ -28,13 +29,19 @@ class LLMAdapter:
     Constructs prompts, parses responses, handles errors.
     """
     
-    def __init__(self, model_a: str, model_b: str):
+    def __init__(self, model_a: str, model_b: str, config: GameConfig):
         """
         model format: "provider/model"
         Examples: "anthropic/claude-3-haiku-20240307", "gpt-4", "groq/llama3-8b-8192"
+
+        Args:
+            model_a: Model identifier for ship A
+            model_b: Model identifier for ship B
+            config: Game configuration (for dynamic prompt generation)
         """
         self.model_a = model_a
         self.model_b = model_b
+        self.config = config
     
     async def get_orders_for_both_ships(
         self, 
@@ -213,17 +220,17 @@ This is why rotation matters - it controls where you shoot!
 ### PHASERS
 
 Phasers fire automatically if enemy is in arc AND cooldown = 0:
-- **WIDE**: 90° arc, 30 range, 15 damage
-- **FOCUSED**: 10° arc, 50 range, 35 damage
-- **Switching config**: Takes 1 full turn (can't fire during reconfiguration)
+- **WIDE**: {wide_arc}° arc, {wide_range} range, {wide_damage} damage
+- **FOCUSED**: {focused_arc}° arc, {focused_range} range, {focused_damage} damage
+- **Switching config**: Takes {reconfig_time}s (can't fire during reconfiguration)
 
 **PHASER COOLDOWN (IMPORTANT!):**
-- After firing, phasers need **3.5 seconds** to recharge
+- After firing, phasers need **{cooldown}s** to recharge
 - Check `phaser_cooldown_remaining` in your status
 - If cooldown > 0, you **cannot fire** phasers this turn
 - Cooldown decrements continuously during the turn
 - Plan your shots carefully - you can't spam every turn!
-- With 3.5s cooldown and 15s turns, you can fire **~4 times per turn** maximum
+- With {cooldown}s cooldown and {turn_duration}s turns, you can fire **~{max_shots} times per turn** maximum
 
 ### TORPEDOES
 
@@ -237,13 +244,13 @@ Independent projectiles you control:
 You must respond with valid JSON in this exact format:
 
 ```json
-{
+{{
   "thinking": "Describe your tactical reasoning here",
   "ship_movement": "FORWARD|LEFT|RIGHT|BACKWARD|FORWARD_LEFT|FORWARD_RIGHT|BACKWARD_LEFT|BACKWARD_RIGHT|STOP",
   "ship_rotation": "NONE|SOFT_LEFT|SOFT_RIGHT|HARD_LEFT|HARD_RIGHT",
   "weapon_action": "MAINTAIN_CONFIG|RECONFIGURE_WIDE|RECONFIGURE_FOCUSED|LAUNCH_TORPEDO",
-  "torpedo_orders": {}
-}
+  "torpedo_orders": {{}}
+}}
 ```
 
 **Required fields:**
@@ -251,7 +258,25 @@ You must respond with valid JSON in this exact format:
 - `ship_rotation`: One of the 5 rotation commands
 - `weapon_action`: Weapon command
 - `thinking`: Your tactical reasoning"""
-        
+
+        # Format system prompt with config values
+        turn_duration = self.config.simulation.decision_interval_seconds
+        cooldown = self.config.phaser.wide.cooldown_seconds
+        max_shots = int(turn_duration / cooldown) if cooldown > 0 else 99
+
+        system_prompt = system_prompt.format(
+            wide_arc=self.config.phaser.wide.arc_degrees,
+            wide_range=self.config.phaser.wide.range_units,
+            wide_damage=self.config.phaser.wide.damage,
+            focused_arc=self.config.phaser.focused.arc_degrees,
+            focused_range=self.config.phaser.focused.range_units,
+            focused_damage=self.config.phaser.focused.damage,
+            reconfig_time=self.config.phaser.reconfiguration_time_seconds,
+            cooldown=cooldown,
+            turn_duration=turn_duration,
+            max_shots=max_shots
+        )
+
         user_prompt = f"""TURN {state.turn}
 
 YOUR STATUS ({ship_id}):
