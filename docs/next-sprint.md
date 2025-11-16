@@ -1,145 +1,195 @@
-# Next Sprint: Story 024 - Phaser Cooldown Enforcement
+# Next Sprint: Story 026 - Balance Tuning & Integration Testing
 
-## Dev Agent Prompt
+**SPRINT START: Story 026 - Balance Tuning & Integration Testing**
 
-You are the **Development Agent** for the AI Arena project. Your task is to implement **Story 024: Phaser Cooldown Enforcement** as part of Epic 004 (Continuous Physics System).
+**Epic:** Epic 004: Continuous Physics System
+**Status:** Ready for Development
+**Branch:** `claude/plan-sprint-01WBvgYYmWn22Qhz6fAA6WKM`
 
-### Context
+## Your Mission
 
-**What's Been Completed:**
-- Stories 020-021: Phaser cooldown tracking infrastructure (cooldown field in ShipState, cooldown decrements per substep)
-- Stories 022-023: Continuous AE economy (movement, rotation, and regeneration all work per substep)
+You are the **Dev Agent** implementing **Story 026: Balance Tuning & Integration Testing** - the final story of Epic 004. This story validates that the continuous physics system implemented in Stories 020-025 is balanced and production-ready.
 
-**Current State:**
-- Ships have `phaser_cooldown_remaining` field that decrements every 0.1s substep
-- But phasers **are not yet prevented from firing** when cooldown > 0
-- Cooldown is **not yet set** after successful phaser fire
-- LLMs **cannot see** cooldown status in their observations
+## Context
 
-### Your Mission: Story 024
+Stories 020-025 have successfully implemented the continuous physics system:
+- ✅ Phaser cooldown enforcement (3.5s between shots)
+- ✅ Per-substep AE regeneration (0.33 AE/s)
+- ✅ Continuous movement AE costs
+- ✅ Continuous rotation AE costs
+- ✅ Comprehensive test coverage (137 tests passing)
 
-Implement phaser cooldown enforcement so that:
-1. Phasers can **only fire** when `ship.phaser_cooldown_remaining == 0.0`
-2. After successful fire, cooldown is **set to** `config.weapons.phaser.cooldown_seconds` (3.5s)
-3. LLMs can **see cooldown status** in their observations
-4. System prompt is **updated** to explain cooldown mechanics to LLMs
+Your job is to **validate game balance** through playtesting and tune parameters if needed.
 
-### Implementation Requirements
+## Acceptance Criteria
 
-**Read the full specification:** `docs/stories/story-024-phaser-cooldown-enforcement.md`
+- [ ] Run at least 3 full LLM vs LLM matches
+- [ ] Analyze match outcomes and energy patterns
+- [ ] Tune phaser cooldown if needed (adjust config.json)
+- [ ] Document balance changes and rationale
+- [ ] Verify tuned parameters feel balanced
+- [ ] Update game documentation with new mechanics
 
-**Key Files to Modify:**
+## Implementation Steps
 
-1. **`ai_arena/game_engine/physics.py`**
-   - Locate weapon firing logic (likely in phaser hit detection or weapon action processing)
-   - Add cooldown check: `if ship.phaser_cooldown_remaining > 0.0: return False`
-   - After successful fire: `ship.phaser_cooldown_remaining = config.weapons.phaser.cooldown_seconds`
-   - Return True/False to indicate fire success
+### 1. Run Baseline Matches (30-40 min)
 
-2. **`ai_arena/llm_adapter/adapter.py`**
-   - Add `phaser_cooldown_remaining` to ship observations sent to LLMs
-   - Update system prompt to explain cooldown mechanics
-   - Make sure LLMs understand they cannot spam phasers
+Run at least 3 full matches using the backend API:
 
-3. **`config.json`**
-   - Verify `weapons.phaser.cooldown_seconds` exists (should be 3.5)
-   - If missing, add it
+```bash
+# Start backend
+python3 main.py
 
-4. **`tests/test_continuous_physics.py`**
-   - Add test: `test_phaser_respects_cooldown()` - verify phaser won't fire during cooldown
-   - Add test: `test_phaser_fires_when_ready()` - verify phaser fires when cooldown = 0
-   - Add test: `test_cooldown_set_after_firing()` - verify cooldown set to 3.5s after fire
+# In another terminal, start matches via API
+curl -X POST http://localhost:8000/api/match/start \
+  -H "Content-Type: application/json" \
+  -d '{"model_a": "anthropic/claude-3-haiku-20240307", "model_b": "anthropic/claude-3-haiku-20240307", "max_turns": 20}'
 
-### Acceptance Criteria
-
-Your implementation must satisfy ALL of these:
-- [ ] Phaser fire only allowed when `ship.phaser_cooldown_remaining == 0.0`
-- [ ] After successful fire, cooldown set to `config.weapons.phaser.cooldown_seconds`
-- [ ] Weapon action still processed (reconfiguration, etc.), just firing prevented during cooldown
-- [ ] LLM observations include `phaser_cooldown_remaining` field
-- [ ] LLM system prompt explains cooldown mechanics
-- [ ] Tests verify cooldown prevents rapid firing
-- [ ] All existing tests still pass (no regressions)
-- [ ] At least one test demonstrates cooldown working in multi-turn scenario
-
-### Testing Strategy
-
-1. **Unit Tests**: Add 3-4 targeted tests in `test_continuous_physics.py`
-2. **Integration Test**: Run at least one short match (5-10 turns) and verify:
-   - Phasers fire when cooldown = 0
-   - Phasers blocked when cooldown > 0
-   - Cooldown correctly set after each fire
-3. **Regression Test**: Run full test suite with `pytest` - all must pass
-
-### Implementation Checklist
-
-Work through these steps systematically:
-1. [ ] Read Story 024 specification thoroughly
-2. [ ] Understand current phaser firing logic in `physics.py`
-3. [ ] Implement cooldown check before firing
-4. [ ] Implement cooldown setting after firing
-5. [ ] Add cooldown to LLM observations in `adapter.py`
-6. [ ] Update LLM system prompt with cooldown explanation
-7. [ ] Write 3-4 unit tests for cooldown enforcement
-8. [ ] Run `pytest` to ensure all tests pass
-9. [ ] Run a short test match to verify behavior
-10. [ ] Fill in Dev Agent Record section in Story 024 with your findings
-
-### Dev Agent Record Template
-
-When complete, update `docs/stories/story-024-phaser-cooldown-enforcement.md` with:
-
-```markdown
-## Dev Agent Record
-
-**Implementation Date:** [Today's date]
-**Agent:** Claude Dev Agent
-**Status:** Completed - Ready for QA
-
-### Implementation Summary
-[Brief description of what you implemented and approach taken]
-
-### Files Created
-[List any new files]
-
-### Files Modified
-[List files modified with brief description]
-
-### Testing Notes
-[Test results, any edge cases discovered]
-
-### Technical Notes
-[Important implementation details, gotchas, notes for future developers]
-
-### Known Issues / Future Work
-[Any issues discovered or follow-up work needed]
+# Repeat for multiple matches, varying models if possible
 ```
 
-### Success Criteria
+**Record for each match:**
+- Match ID and duration
+- Winner and final scores
+- Total phaser shots fired (estimate from replays)
+- Average AE levels over time
+- Any unusual behavior or patterns
 
-Your implementation is complete when:
-- ✅ All acceptance criteria met
-- ✅ All tests passing (run `pytest`)
-- ✅ Dev Agent Record section filled in Story 024
-- ✅ Code committed with clear commit message
-- ✅ Ready for QA Agent review
+### 2. Analyze Match Data (20-30 min)
 
-### Important Notes
+Review replay JSONs in `replays/` directory:
 
-1. **Read the game spec**: Phaser cooldown should enable ~4 shots per 15s turn (not 1 per turn)
-2. **Maintain determinism**: Fixed timestep, predictable behavior
-3. **Don't break existing features**: All 131 tests must still pass
-4. **Follow existing patterns**: Mirror the approach from Stories 021-023
+```python
+# Example analysis script
+import json
+import glob
 
-### Questions to Consider
+replay_files = glob.glob('replays/*.json')
+for replay_file in replay_files:
+    with open(replay_file) as f:
+        replay = json.load(f)
+        # Analyze:
+        # - Number of phaser hits
+        # - AE patterns over time
+        # - Movement/rotation usage
+        # - Match duration
+```
 
-- Where exactly does phaser firing happen in the current code?
-- Is there a separate function for weapon actions, or is it inline?
-- How do we handle phaser reconfiguration vs firing?
-- Should cooldown apply to both WIDE and FOCUSED phasers equally?
+**Key questions:**
+- Are phasers firing too frequently? (should be ~4 shots per 15s turn max)
+- Is energy economy working? (ships should manage AE strategically, not always full or empty)
+- Are matches too short/long?
+- Do LLMs understand cooldown mechanics?
 
-**Begin Implementation Now**
+### 3. Tune Parameters (10-20 min, if needed)
 
-Start by reading the current phaser firing logic in `ai_arena/game_engine/physics.py`. Look for functions related to weapon actions, phaser hits, or combat resolution. Then proceed with the implementation following the checklist above.
+Based on analysis, adjust `config.json` if needed:
 
-Good luck! 🚀
+**If phasers too strong:**
+- Increase `cooldown_seconds`: 3.5 → 5.0 or 7.5
+- Reduce damage slightly
+
+**If phasers too weak:**
+- Decrease `cooldown_seconds`: 3.5 → 2.5
+
+**If energy economy broken:**
+- Adjust AE rates in config.json
+
+**Document all changes with rationale.**
+
+### 4. Create Balance Analysis Document (20-30 min)
+
+Create `docs/epic-004-balance-analysis.md`:
+
+```markdown
+# Epic 004: Continuous Physics Balance Analysis
+
+## Test Matches
+
+### Match 1: Claude vs Claude
+- Match ID: [match_id]
+- Duration: [X] turns
+- Winner: [ship_a/ship_b]
+- Final Scores: Ship A: [X shields, Y AE], Ship B: [X shields, Y AE]
+- Phaser Shots: [estimate count]
+- Observations: [key findings]
+
+[Repeat for each match]
+
+## Analysis
+
+### Phaser Cooldown
+- [Analysis of 3.5s cooldown effectiveness]
+- [Firing frequency observations]
+- [LLM understanding of cooldown]
+
+### Energy Economy
+- [AE management patterns]
+- [Movement vs rotation costs]
+- [Regeneration balance]
+
+### Match Duration
+- [Average match length]
+- [Is it engaging?]
+
+## Tuning Decisions
+
+### Changes Made (if any)
+- [Parameter changes with rationale]
+
+### Rationale
+- [Why these changes improve balance]
+
+## Recommendation
+- [Ready for production? Further tuning needed?]
+```
+
+### 5. Update Documentation (10-15 min)
+
+Update `docs/architecture.md` or relevant docs to reflect continuous physics:
+
+- Document phaser cooldown mechanics
+- Document continuous AE economy
+- Update any outdated per-turn references
+
+### 6. Complete Dev Agent Record
+
+Fill in the "Dev Agent Record" section in `docs/stories/story-026-balance-tuning-integration.md`:
+
+- Implementation date
+- Summary of matches run
+- Files created/modified
+- Balance findings
+- Technical notes
+
+**Update YAML status to "Ready for QA"** in the story file.
+
+## Success Criteria
+
+- ✅ At least 3 matches completed successfully
+- ✅ Balance analysis document created
+- ✅ Parameters tuned (if needed) with documented rationale
+- ✅ Documentation updated
+- ✅ Dev Agent Record filled in
+- ✅ All tests still passing
+
+## Important Notes
+
+- **API Keys Required:** Ensure `.env` file has valid `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+- **Match Duration:** Each match may take 2-5 minutes depending on model response times
+- **Cost Awareness:** LLM API calls cost money - budget accordingly
+- **Determinism:** Run same match twice to verify deterministic replays if time permits
+
+## Deliverables
+
+1. `docs/epic-004-balance-analysis.md` - Balance analysis report
+2. Updated `config.json` (if tuning needed)
+3. Updated `docs/architecture.md` (continuous physics documentation)
+4. Completed Dev Agent Record in story file
+5. Status changed to "Ready for QA"
+
+---
+
+**BEGIN IMPLEMENTATION**
+
+Please proceed with Story 026 implementation following the steps above. When complete, hand off to QA Agent for validation.
