@@ -5,23 +5,12 @@ import pytest
 import copy
 import numpy as np
 from ai_arena.game_engine.physics import PhysicsEngine
+from tests.helpers import create_test_state, default_orders_b, get_default_orders_b
 from ai_arena.game_engine.data_models import (
     GameState, ShipState, Orders, Vec2D, MovementType,
     MovementDirection, RotationCommand, PhaserConfig
 )
-from ai_arena.config import ConfigLoader
-
-
-@pytest.fixture
-def config():
-    """Load game configuration for tests."""
-    return ConfigLoader().load("config.json")
-
-
-@pytest.fixture
-def engine(config):
-    """Create physics engine with config for tests."""
-    return PhysicsEngine(config)
+# Fixtures and helpers imported from conftest.py automatically by pytest
 
 
 def test_ship_movement_straight(engine, config):
@@ -108,43 +97,6 @@ def test_torpedo_launch(engine, config):
     expected_ae = 100 - config.torpedo.launch_cost_ae + ae_regen
     # Use floating-point comparison (Story 021: continuous AE regeneration)
     assert abs(new_state.ship_a.ae - expected_ae) < 0.01
-
-
-# Helper function for creating test states
-def create_test_state(ship_a_position=None, ship_a_velocity=None, ship_a_heading=0.0,
-                     ship_a_shields=100, ship_a_ae=100,
-                     ship_b_position=None, ship_b_velocity=None, ship_b_heading=3.14159):
-    """Helper to create test game states with sensible defaults."""
-    return GameState(
-        turn=0,
-        ship_a=ShipState(
-            position=ship_a_position or Vec2D(100, 100),
-            velocity=ship_a_velocity or Vec2D(0, 0),
-            heading=ship_a_heading,
-            shields=ship_a_shields,
-            ae=ship_a_ae,
-            phaser_config=PhaserConfig.WIDE
-        ),
-        ship_b=ShipState(
-            position=ship_b_position or Vec2D(200, 200),
-            velocity=ship_b_velocity or Vec2D(0, 0),
-            heading=ship_b_heading,
-            shields=100,
-            ae=100,
-            phaser_config=PhaserConfig.WIDE
-        ),
-        torpedoes=[]
-    )
-
-
-# Default orders for ship B (stationary)
-def get_default_orders_b():
-    return Orders(
-        movement=MovementDirection.STOP,
-        rotation=RotationCommand.NONE,
-        weapon_action="MAINTAIN_CONFIG",
-        torpedo_orders={}
-    )
 
 
 # Story 010: Physics Testing Suite - Comprehensive Tests

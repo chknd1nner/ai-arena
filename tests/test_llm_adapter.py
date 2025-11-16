@@ -20,12 +20,6 @@ def config():
 
 
 @pytest.fixture
-def adapter(config):
-    """Create test LLM adapter."""
-    return LLMAdapter(model_a="gpt-4", model_b="gpt-4", config=config)
-
-
-@pytest.fixture
 def mock_game_state():
     """Create a mock game state for testing."""
     ship_a = ShipState(

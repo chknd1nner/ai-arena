@@ -31,12 +31,6 @@ def config():
 
 
 @pytest.fixture
-def physics_engine(config):
-    """Create physics engine instance."""
-    return PhysicsEngine(config)
-
-
-@pytest.fixture
 def initial_state():
     """Create initial game state for testing."""
     return GameState(

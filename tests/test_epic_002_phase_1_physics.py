@@ -15,56 +15,7 @@ from ai_arena.game_engine.data_models import (
     GameState, ShipState, Orders, Vec2D,
     MovementDirection, RotationCommand, PhaserConfig
 )
-from ai_arena.config import ConfigLoader
-
-
-@pytest.fixture
-def config():
-    """Load game configuration for tests."""
-    return ConfigLoader().load("config.json")
-
-
-@pytest.fixture
-def engine(config):
-    """Create physics engine with config for tests."""
-    return PhysicsEngine(config)
-
-
-def create_test_state(
-    ship_a_position=None,
-    ship_a_heading=0.0,
-    ship_a_ae=100,
-    ship_b_position=None,
-    ship_b_heading=0.0,
-    ship_b_ae=100
-):
-    """Helper to create test game state."""
-    ship_a = ShipState(
-        position=ship_a_position or Vec2D(100, 100),
-        velocity=Vec2D(0, 0),
-        heading=ship_a_heading,
-        shields=100,
-        ae=ship_a_ae,
-        phaser_config=PhaserConfig.WIDE
-    )
-    ship_b = ShipState(
-        position=ship_b_position or Vec2D(500, 100),
-        velocity=Vec2D(0, 0),
-        heading=ship_b_heading,
-        shields=100,
-        ae=ship_b_ae,
-        phaser_config=PhaserConfig.WIDE
-    )
-    return GameState(turn=0, ship_a=ship_a, ship_b=ship_b, torpedoes=[])
-
-
-def default_orders_b():
-    """Default orders for ship B (stationary)."""
-    return Orders(
-        movement=MovementDirection.STOP,
-        rotation=RotationCommand.NONE,
-        weapon_action="MAINTAIN_CONFIG"
-    )
+from tests.helpers import create_test_state, default_orders_b, get_default_orders_b
 
 
 # =============================================================================

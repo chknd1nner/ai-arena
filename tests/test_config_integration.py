@@ -11,19 +11,6 @@ from ai_arena.game_engine.data_models import (
     GameState, ShipState, Orders, Vec2D, MovementType,
     MovementDirection, RotationCommand, PhaserConfig
 )
-from ai_arena.config import ConfigLoader
-
-
-@pytest.fixture
-def config():
-    """Load game configuration for tests."""
-    return ConfigLoader().load("config.json")
-
-
-@pytest.fixture
-def engine(config):
-    """Create physics engine with config for tests."""
-    return PhysicsEngine(config)
 
 
 class TestPhysicsEngineUsesConfigValues:
