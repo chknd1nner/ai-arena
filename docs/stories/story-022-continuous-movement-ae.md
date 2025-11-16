@@ -1,7 +1,7 @@
 # Story 022: Continuous Movement AE Application
 
 **Epic:** [Epic 004: Continuous Physics System](../epic-004-continuous-physics.md)
-**Status:** Ready for QA
+**Status:** Completed
 **Size:** Small (~1-1.5 hours)
 **Priority:** P0
 
