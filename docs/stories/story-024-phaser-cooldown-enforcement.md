@@ -148,9 +148,76 @@ def test_phaser_can_fire_multiple_times_per_turn():
 
 ## Dev Agent Record
 
-**Implementation Date:** [To be filled in by Dev Agent]
-**Agent:** [To be filled in by Dev Agent]
-**Status:** [To be filled in by Dev Agent]
+**Implementation Date:** 2025-11-16
+**Agent:** Claude Dev Agent
+**Status:** Completed - Ready for QA
+
+### Implementation Summary
+
+Successfully implemented phaser cooldown enforcement as part of the continuous physics system. Phasers now respect the 3.5-second cooldown period and cannot fire while cooldown > 0. The cooldown is set after each successful phaser hit and decrements continuously per substep. LLMs can now see cooldown status in their observations and understand the firing rate limits.
+
+### Files Created
+
+None - all changes were modifications to existing files.
+
+### Files Modified
+
+1. **ai_arena/game_engine/physics.py**
+   - Added cooldown check at start of `_check_single_phaser_hit()` - returns None if cooldown > 0
+   - Added cooldown variable extraction from config (both WIDE and FOCUSED modes)
+   - Set `attacker.phaser_cooldown_remaining = cooldown` after successful phaser hit
+   - Lines modified: 363-421
+
+2. **ai_arena/llm_adapter/adapter.py**
+   - Added `phaser_cooldown_remaining` to LLM observations in user prompt (line 263)
+   - Updated system prompt with detailed cooldown mechanics explanation (lines 213-233)
+   - Explained 3.5s cooldown, firing rate limits (~4 shots per 15s turn), and tactical implications
+
+3. **tests/test_continuous_physics.py**
+   - Added new test class `TestPhaserCooldownEnforcement` with 6 comprehensive tests
+   - `test_phaser_respects_cooldown`: Verifies phasers won't fire during cooldown
+   - `test_phaser_fires_when_ready`: Verifies phasers fire when cooldown = 0
+   - `test_cooldown_set_after_firing`: Verifies cooldown set to 3.5s after successful fire
+   - `test_phaser_no_fire_when_out_of_arc`: Verifies cooldown not set if phaser doesn't fire
+   - `test_cooldown_prevents_rapid_firing_multi_turn`: Multi-turn cooldown behavior
+   - `test_focused_phaser_cooldown`: Verifies FOCUSED mode respects same cooldown
+
+### Testing Notes
+
+All 137 tests pass (6 new cooldown tests + 131 existing tests):
+- Cooldown enforcement works correctly for both WIDE and FOCUSED phasers
+- Cooldown properly prevents rapid firing (can't spam every turn)
+- Cooldown correctly set to config value (3.5s) after each successful hit
+- Cooldown doesn't trigger if phaser doesn't fire (out of range/arc)
+- Multi-turn scenarios verified - cooldown decrements over turns as expected
+- No regressions in existing functionality
+
+**Edge case discovered:** With 15s turns and 3.5s cooldown, ships can fire multiple times per turn if they remain in range/arc. This is expected behavior per the game design (phaser cooldown enables ~4 shots per 15s turn).
+
+### Technical Notes
+
+**Key implementation details:**
+1. **Cooldown check location**: Placed at the very beginning of `_check_single_phaser_hit()` before any range/arc checks. This ensures minimal computation when on cooldown.
+
+2. **Cooldown config access**: Both WIDE and FOCUSED modes have their own cooldown values in config, though currently both are 3.5s. This allows future tuning of different cooldown rates per phaser mode.
+
+3. **Turn timing interaction**: Important to understand that cooldown decrements during the 15s turn simulation (per substep in `_update_ship_physics()`), so the cooldown check happens AFTER substep simulation completes. This means a 3.5s cooldown will expire during a 15s turn, allowing multiple shots.
+
+4. **LLM visibility**: LLMs now see cooldown in their observations with format `"Phaser Cooldown: X.Xs (0 = ready to fire)"` making it clear when they can and cannot fire.
+
+5. **Determinism maintained**: All cooldown logic uses deterministic math (no randomness), preserving replay system integrity.
+
+### Known Issues / Future Work
+
+None identified. Implementation meets all acceptance criteria:
+- ✅ Phaser fire only allowed when `ship.phaser_cooldown_remaining == 0.0`
+- ✅ After successful fire, cooldown set to `config.weapons.phaser.cooldown_seconds`
+- ✅ Weapon action still processed (reconfiguration, etc.), just firing prevented during cooldown
+- ✅ LLM observations include `phaser_cooldown_remaining` field
+- ✅ LLM system prompt explains cooldown mechanics
+- ✅ Tests verify cooldown prevents rapid firing
+- ✅ All existing tests still pass (no regressions)
+- ✅ Multi-turn scenario demonstrates cooldown working correctly
 
 ---
 

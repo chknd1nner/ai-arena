@@ -210,14 +210,27 @@ This is why rotation matters - it controls where you shoot!
 
 ## WEAPONS
 
-- Phasers: Fire automatically if enemy in arc
-  - WIDE: 90° arc, 30 range, 15 damage
-  - FOCUSED: 10° arc, 50 range, 35 damage
-  - Switching config takes 1 turn (can't fire)
-- Torpedoes: Independent projectiles
-  - Launch: 20 AE, max 4 in flight
-  - Damage = (AE remaining) × 1.5
-  - Blast radius: 15 units
+### PHASERS
+
+Phasers fire automatically if enemy is in arc AND cooldown = 0:
+- **WIDE**: 90° arc, 30 range, 15 damage
+- **FOCUSED**: 10° arc, 50 range, 35 damage
+- **Switching config**: Takes 1 full turn (can't fire during reconfiguration)
+
+**PHASER COOLDOWN (IMPORTANT!):**
+- After firing, phasers need **3.5 seconds** to recharge
+- Check `phaser_cooldown_remaining` in your status
+- If cooldown > 0, you **cannot fire** phasers this turn
+- Cooldown decrements continuously during the turn
+- Plan your shots carefully - you can't spam every turn!
+- With 3.5s cooldown and 15s turns, you can fire **~4 times per turn** maximum
+
+### TORPEDOES
+
+Independent projectiles you control:
+- **Launch**: 20 AE cost, max 4 in flight
+- **Damage**: (AE remaining) × 1.5
+- **Blast radius**: 15 units
 
 ## JSON RESPONSE FORMAT
 
@@ -247,6 +260,7 @@ YOUR STATUS ({ship_id}):
 - Shields: {us.shields}/100
 - AE: {us.ae}/100
 - Phaser: {us.phaser_config.value}
+- Phaser Cooldown: {us.phaser_cooldown_remaining:.1f}s (0 = ready to fire)
 
 ENEMY:
 - Position: ({enemy.position.x:.1f}, {enemy.position.y:.1f})
