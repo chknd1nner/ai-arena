@@ -1,7 +1,7 @@
 # Story 024: Phaser Cooldown Enforcement
 
 **Epic:** [Epic 004: Continuous Physics System](../epic-004-continuous-physics.md)
-**Status:** Not Started
+**Status:** Ready for dev
 **Size:** Medium (~2 hours)
 **Priority:** P0
 
