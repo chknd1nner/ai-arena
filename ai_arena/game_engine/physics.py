@@ -369,6 +369,10 @@ class PhysicsEngine:
         turn: int
     ) -> Optional[Event]:
         """Check if attacker's phaser hits target."""
+        # Story 024: Check cooldown before firing
+        if attacker.phaser_cooldown_remaining > 0.0:
+            return None  # Cannot fire - still on cooldown
+
         distance = attacker.position.distance_to(target.position)
 
         # Determine phaser parameters from config
@@ -376,26 +380,32 @@ class PhysicsEngine:
             arc = np.radians(self.config.phaser.wide.arc_degrees)
             max_range = self.config.phaser.wide.range_units
             damage = self.config.phaser.wide.damage
+            cooldown = self.config.phaser.wide.cooldown_seconds
         else:  # FOCUSED
             arc = np.radians(self.config.phaser.focused.arc_degrees)
             max_range = self.config.phaser.focused.range_units
             damage = self.config.phaser.focused.damage
-        
+            cooldown = self.config.phaser.focused.cooldown_seconds
+
         # Check range
         if distance > max_range:
             return None
-        
+
         # Check if target is in firing arc
         delta = target.position - attacker.position
         angle_to_target = np.arctan2(delta.y, delta.x)
-        
+
         angle_diff = (angle_to_target - attacker.heading) % (2 * np.pi)
         if angle_diff > np.pi:
             angle_diff -= 2 * np.pi
-        
+
         # Check if within arc
         if abs(angle_diff) <= arc / 2:
             target.shields -= damage
+
+            # Story 024: Set cooldown after successful fire
+            attacker.phaser_cooldown_remaining = cooldown
+
             return Event(
                 type="phaser_hit",
                 turn=turn,
@@ -407,7 +417,7 @@ class PhysicsEngine:
                     "distance": distance
                 }
             )
-        
+
         return None
 
     def _check_torpedo_collisions(self, state: GameState) -> List[Event]:

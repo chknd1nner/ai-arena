@@ -150,7 +150,7 @@ All core data structures defined in `ai_arena/game_engine/data_models.py`:
 - **TorpedoState**: Independent projectile with position, velocity, AE, owner
 - **Orders**: LLM commands (movement, weapon_action, torpedo_orders)
 - **MovementType**: Enum of movement commands (STRAIGHT, HARD_LEFT, etc.)
-- **PhaserConfig**: WIDE (90° arc, 30 range, 15 dmg) or FOCUSED (10° arc, 50 range, 35 dmg)
+- **PhaserConfig**: WIDE or FOCUSED (arc, range, and damage values configured in `config.json`)
 
 ### Physics Constants
 

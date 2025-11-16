@@ -1,7 +1,7 @@
 # Story 023: Continuous Rotation AE Application
 
 **Epic:** [Epic 004: Continuous Physics System](../epic-004-continuous-physics.md)
-**Status:** Ready for QA
+**Status:** Completed
 **Size:** Small (~1 hour)
 **Priority:** P0
 

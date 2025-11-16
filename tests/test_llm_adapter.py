@@ -9,12 +9,20 @@ from ai_arena.game_engine.data_models import (
     MovementDirection, RotationCommand, GameState, ShipState,
     Vec2D, PhaserConfig
 )
+from ai_arena.config import ConfigLoader
 
 
 @pytest.fixture
-def adapter():
+def config():
+    """Load game configuration for tests."""
+    loader = ConfigLoader()
+    return loader.load("config.json")
+
+
+@pytest.fixture
+def adapter(config):
     """Create test LLM adapter."""
-    return LLMAdapter(model_a="gpt-4", model_b="gpt-4")
+    return LLMAdapter(model_a="gpt-4", model_b="gpt-4", config=config)
 
 
 @pytest.fixture
