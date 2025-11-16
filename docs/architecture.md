@@ -387,18 +387,65 @@ SUBSTEPS = 150  # 15 seconds / 0.1s timestep
 SHIP_SPEED = 3.0  # units/second
 TORPEDO_SPEED = 4.0  # units/second
 
-PHASER_WIDE_ARC = 90.0  # total arc
+# Phaser Configuration (from config.json)
+PHASER_WIDE_ARC = 90.0  # degrees
 PHASER_WIDE_RANGE = 30.0  # units
 PHASER_WIDE_DAMAGE = 15.0
+PHASER_WIDE_COOLDOWN = 3.5  # seconds between shots
 
-PHASER_FOCUSED_ARC = 10.0
-PHASER_FOCUSED_RANGE = 50.0
+PHASER_FOCUSED_ARC = 10.0  # degrees
+PHASER_FOCUSED_RANGE = 50.0  # units
 PHASER_FOCUSED_DAMAGE = 35.0
+PHASER_FOCUSED_COOLDOWN = 3.5  # seconds between shots
+
+PHASER_RECONFIGURATION_TIME = 15.0  # seconds (blocks firing)
+
+# Energy Economy (continuous)
+AE_REGEN_PER_SECOND = 0.333  # 5.0 AE per 15s turn
+MAX_AE = 100.0
+MOVEMENT_COSTS = {  # AE per second
+    "FORWARD": 0.33,
+    "DIAGONAL": 0.53,
+    "PERPENDICULAR": 0.67,
+    "BACKWARD": 0.67,
+    "BACKWARD_DIAGONAL": 0.80,
+    "STOP": 0.0
+}
+ROTATION_COSTS = {  # AE per second
+    "NONE": 0.0,
+    "SOFT_TURN": 0.13,
+    "HARD_TURN": 0.33
+}
 
 TORPEDO_BLAST_RADIUS = 15.0
 ```
 
-**Scaling Strategy:** 
+**Continuous Physics System (Epic 004):**
+
+The game uses a **continuous physics model** with per-substep updates:
+
+1. **Phaser Cooldown (3.5s)**
+   - Phasers fire automatically when enemy enters arc
+   - Cooldown timer decrements each substep (0.1s)
+   - Ships can fire ~4 times per 15s decision interval if continuously in arc
+   - Reconfiguring phaser blocks firing for 15 seconds (1 full turn)
+   - Cooldown prevents overwhelming damage spam
+
+2. **Continuous AE Economy**
+   - Energy regenerates every substep: +0.333 AE/s
+   - Movement costs applied per substep based on movement type
+   - Rotation costs applied per substep based on rotation rate
+   - Forward movement (0.33 AE/s) nearly balances regeneration (0.333 AE/s)
+   - Aggressive maneuvering depletes energy, forcing strategic decisions
+   - Ships manage energy continuously, not per-turn
+
+3. **Energy Management Patterns**
+   - Aggressive play: 45-85 AE fluctuation (observed in testing)
+   - Conservative play: 70-95 AE range
+   - Energy depletion risk exists for overly aggressive tactics
+   - Torpedo launches (20 AE) are significant energy investments
+
+**Scaling Strategy:**
 - Completely stateless
 - Pure function - perfect for extraction
 - Could become "Physics Service" with HTTP endpoint: `POST /resolve-turn`
@@ -408,6 +455,8 @@ TORPEDO_BLAST_RADIUS = 15.0
 - All floating point operations use consistent precision.
 - Fixed timestep prevents non-determinism.
 - No randomness anywhere in engine.
+- **Phaser cooldown enforced at substep level** - prevents multiple shots per substep.
+- **Energy economy calculated per substep** - smooth, continuous resource management.
 
 ---
 
