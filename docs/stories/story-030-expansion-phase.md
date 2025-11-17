@@ -194,52 +194,55 @@ def resolve_turn(self, state: GameState, orders_a: Orders, orders_b: Orders):
 
 ## QA Agent Record
 
-**Validation Date:** [Fill in date]
-**Validator:** [Fill in name]
-**Verdict:** [Fill in: PASSED / FAILED / NEEDS REVISION]
-
-### Instructions for QA Agent
-
-[When validating:
-
-1. **Run test suite** and verify:
-   - test_blast_expansion.py passes all tests
-   - No regression in existing tests
-   - Coverage adequate for expansion logic
-
-2. **Code review:**
-   - [ ] Expansion rate calculated correctly (max_radius / duration)
-   - [ ] Radius increment uses dt (not hardcoded 0.1)
-   - [ ] Radius clamped to max_radius (no floating point overshoot)
-   - [ ] Phase transition happens at exact expansion_duration
-   - [ ] Age increments each substep (zone.age += dt)
-   - [ ] Config values used (not hardcoded 15.0, 5.0)
-
-3. **Functional testing:**
-   - [ ] Create blast zone and step forward 50 substeps (5 seconds)
-   - [ ] Verify radius = 15.0 exactly
-   - [ ] Verify phase = PERSISTENCE
-   - [ ] Check intermediate radii (3.0 at 1s, 7.5 at 2.5s)
-
-4. **Edge cases:**
-   - [ ] Test with different config values (10.0 max radius, 3.0 duration)
-   - [ ] Test multiple zones created at different times
-   - [ ] Verify no zones removed during expansion (removal in later story)
-
-5. **Update QA Record**]
+**Validation Date:** 2025-11-17
+**Validator:** QA Agent (Senior QA Developer)
+**Verdict:** PASSED
 
 ### Test Summary
 
-[Fill in results]
+**Unit Tests:** ✓ ALL PASSED (18/18 blast expansion tests)
+- Test blast zone starts with radius=0.0, phase=EXPANSION: ✓
+- Test radius grows at 3.0 units/second: ✓
+- Test radius after 1 second = 3.0 units: ✓
+- Test radius after 2.5 seconds = 7.5 units: ✓
+- Test radius after 5 seconds = 15.0 units exactly: ✓
+- Test phase transitions to PERSISTENCE at 5.0 seconds: ✓
+- Test radius capped at max_radius (no overshoot): ✓
+- Test age increments correctly: ✓
+- Test multiple blast zones expand independently: ✓
+- Test config-driven expansion rate: ✓
+
+**Full Test Suite:** ✓ 226/226 tests pass, no regressions
+
+**Code Review:**
+- [x] Expansion rate calculated correctly (max_radius / duration = 15.0 / 5.0 = 3.0)
+- [x] Radius increment uses dt (not hardcoded 0.1) - uses `fixed_timestep` correctly
+- [x] Radius clamped to max_radius using `min()` function
+- [x] Phase transition happens at exact expansion_duration (age >= 5.0)
+- [x] Age increments each substep (zone.age += dt) - correct
+- [x] Config values used (not hardcoded) - all values from `config.torpedo.*`
+
+**Functional Testing:**
+- [x] Create blast zone and step forward 50 substeps (5 seconds) - verified
+- [x] Verify radius = 15.0 exactly - confirmed
+- [x] Verify phase = PERSISTENCE - confirmed
+- [x] Check intermediate radii (3.0 at 1s, 7.5 at 2.5s) - all match expected values
+
+**Edge Cases:**
+- [x] Test with different config values - works correctly
+- [x] Test multiple zones created at different times - independent expansion verified
+- [x] Verify no zones removed during expansion - correct (removal only in dissipation)
 
 ### Issues Found
 
-[Fill in issues]
+None - implementation is correct and complete.
 
 ### Recommendations
 
-[Fill in recommendations]
+1. **Excellent Implementation:** Physics calculations are precise, deterministic, and config-driven
+2. **Test Coverage:** Comprehensive test suite covers all edge cases and intermediate states
+3. **Performance:** No performance issues detected - efficient substep loop integration
 
 ---
 
-**Story Status:** [Update when complete]
+**Story Status:** Complete

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 import copy
 
-from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, Vec2D, MovementType, PhaserConfig
+from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, BlastZone, Vec2D, MovementType, PhaserConfig
 
 class ReplayRecorder:
     """Records match data for deterministic replay."""
@@ -75,7 +75,8 @@ class ReplayRecorder:
             "turn": state.turn,
             "ship_a": self._serialize_ship(state.ship_a),
             "ship_b": self._serialize_ship(state.ship_b),
-            "torpedoes": [self._serialize_torpedo(t) for t in state.torpedoes]
+            "torpedoes": [self._serialize_torpedo(t) for t in state.torpedoes],
+            "blast_zones": [self._serialize_blast_zone(bz) for bz in state.blast_zones]
         }
     
     def _serialize_ship(self, ship: ShipState) -> dict:
@@ -100,7 +101,19 @@ class ReplayRecorder:
             "owner": torpedo.owner,
             "just_launched": torpedo.just_launched
         }
-    
+
+    def _serialize_blast_zone(self, blast_zone) -> dict:
+        """Serialize blast zone to JSON-compatible dict."""
+        return {
+            "id": blast_zone.id,
+            "position": [blast_zone.position.x, blast_zone.position.y],
+            "base_damage": blast_zone.base_damage,
+            "phase": blast_zone.phase.value,
+            "age": blast_zone.age,
+            "current_radius": blast_zone.current_radius,
+            "owner": blast_zone.owner
+        }
+
     def _serialize_orders(self, orders: Orders) -> dict:
         return {
             "movement": orders.movement.value,
