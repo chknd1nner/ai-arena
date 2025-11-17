@@ -161,60 +161,76 @@ class TorpedoConfig:
 
 ## Dev Agent Record
 
-**Implementation Date:** [Fill in date when implementing]
-**Agent:** [Fill in agent name]
-**Status:** [Fill in status: Ready for QA / Blocked / In Progress]
-
-### Instructions for Dev Agent
-
-[When implementing this story:
-
-1. **Start by reading** the following files to understand current structure:
-   - `ai_arena/game_engine/data_models.py` (existing data models)
-   - `config.json` (current config structure)
-   - `ai_arena/config/loader.py` (config validation patterns)
-
-2. **Add the BlastZonePhase enum** to data_models.py following the pattern of existing enums like `PhaserConfig`
-
-3. **Add the BlastZone dataclass** to data_models.py with proper type hints and docstrings
-
-4. **Update GameState** to include `blast_zones: List[BlastZone] = field(default_factory=list)`
-
-5. **Update TorpedoState** to include `detonation_timer: Optional[float] = None`
-
-6. **Update config.json** with the blast zone parameters under the torpedo section
-
-7. **Update config/loader.py** TorpedoConfig class to include blast zone fields with validation
-
-8. **Create comprehensive tests** in `tests/test_blast_zone_models.py` covering:
-   - BlastZone creation and field validation
-   - BlastZonePhase enum usage
-   - GameState serialization with blast zones
-   - Config loading and validation
-
-9. **Run all existing tests** to ensure no breaking changes
-
-10. **Update this Dev Agent Record** with:
-    - Summary of changes made
-    - Any issues encountered
-    - Test results
-    - Files created/modified]
+**Implementation Date:** 2025-11-17
+**Agent:** Claude (Sonnet 4.5)
+**Status:** Ready for QA
 
 ### Summary
 
-[Fill in summary of implementation work]
+Successfully implemented all foundational data structures for Epic 005 blast zone system. Added BlastZonePhase enum with 3 lifecycle phases (EXPANSION, PERSISTENCE, DISSIPATION), created BlastZone dataclass with 7 fields tracking position, damage, phase, age, radius, and owner. Updated GameState to track blast zones and TorpedoState to support timed detonation. Renamed config parameter from `blast_duration_seconds` to `blast_persistence_seconds` for semantic clarity. All 17 new tests pass with no regressions in 149 existing tests.
 
 ### Work Completed
 
-- [ ] [List completed tasks]
+- [x] Added BlastZonePhase enum to data_models.py with EXPANSION, PERSISTENCE, DISSIPATION values
+- [x] Added BlastZone dataclass to data_models.py with comprehensive docstring
+- [x] Updated GameState to include `blast_zones: List[BlastZone] = field(default_factory=list)`
+- [x] Updated TorpedoState to include `detonation_timer: Optional[float] = None`
+- [x] Renamed `blast_duration_seconds` to `blast_persistence_seconds` in config.json (semantic improvement)
+- [x] Updated TorpedoConfig in loader.py with `blast_persistence_seconds` field
+- [x] Added validation for blast_expansion_seconds, blast_persistence_seconds, and blast_dissipation_seconds
+- [x] Created comprehensive test suite in tests/test_blast_zone_models.py with 17 tests
+- [x] Fixed test fixture files to use new `blast_persistence_seconds` field name
+- [x] Verified all 166 tests pass (17 new + 149 existing)
 
 ### Test Results
 
-[Fill in test results - all passing, any failures, coverage]
+**New Tests:** 17/17 passing in `tests/test_blast_zone_models.py`
+- 3 tests for BlastZonePhase enum
+- 3 tests for BlastZone dataclass creation and serialization
+- 4 tests for GameState with blast_zones field
+- 4 tests for TorpedoState with detonation_timer field
+- 3 tests for config loading and validation
+
+**Regression Tests:** 149/149 passing (no regressions)
+
+**Total:** 166/166 tests passing
+
+**Coverage:**
+- BlastZone creation and lifecycle phases
+- GameState serialization with blast zones
+- TorpedoState with optional detonation timer
+- Config loading with all 5 blast zone parameters
+- Validation of blast zone timing parameters
 
 ### Issues Encountered
 
-[Fill in any issues, blockers, or decisions made]
+**Issue 1: Config Field Naming**
+- Initial implementation found existing config had `blast_duration_seconds` but story spec required `blast_persistence_seconds`
+- **Resolution:** Renamed field throughout codebase for semantic clarity (persistence phase is conceptually different from total duration)
+- **Impact:** Required updating test fixture files in `tests/fixtures/` directory
+
+**Issue 2: Test Fixture Compatibility**
+- Test fixtures `invalid_range_violations.json` and `invalid_negative_values.json` still used old field name
+- **Resolution:** Updated both fixtures to use `blast_persistence_seconds`
+- **Impact:** All validation tests now pass
+
+**Design Decisions:**
+1. Used `Optional[float]` for `detonation_timer` to clearly distinguish between timed detonation (value present) and collision-only detonation (None)
+2. Followed existing dataclass patterns with `field(default_factory=list)` for `blast_zones`
+3. Added comprehensive docstring to BlastZone explaining lifecycle and field meanings
+4. Validation enforces all timing parameters > 0 (consistent with other config validations)
+
+### Files Created/Modified
+
+**Created:**
+- `tests/test_blast_zone_models.py` (17 new tests)
+
+**Modified:**
+- `ai_arena/game_engine/data_models.py` (added BlastZonePhase, BlastZone, updated GameState and TorpedoState)
+- `config.json` (renamed `blast_duration_seconds` → `blast_persistence_seconds`)
+- `ai_arena/config/loader.py` (updated TorpedoConfig, added validation)
+- `tests/fixtures/invalid_range_violations.json` (updated field name)
+- `tests/fixtures/invalid_negative_values.json` (updated field name)
 
 ---
 

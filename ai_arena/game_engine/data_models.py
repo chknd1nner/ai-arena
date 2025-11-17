@@ -79,6 +79,12 @@ class PhaserConfig(Enum):
     WIDE = "WIDE"
     FOCUSED = "FOCUSED"
 
+class BlastZonePhase(Enum):
+    """Lifecycle phase for blast zones."""
+    EXPANSION = "expansion"       # Growing from 0→15 units
+    PERSISTENCE = "persistence"   # Holding at 15 units
+    DISSIPATION = "dissipation"   # Shrinking from 15→0 units
+
 @dataclass
 class ShipState:
     """Complete state for one ship."""
@@ -108,6 +114,30 @@ class TorpedoState:
     ae_remaining: int
     owner: str                # "ship_a" or "ship_b"
     just_launched: bool = False
+    detonation_timer: Optional[float] = None  # Seconds until timed detonation
+
+@dataclass
+class BlastZone:
+    """Persistent area of damage from torpedo detonation.
+
+    Lifecycle: Expansion (5s) → Persistence (60s) → Dissipation (5s) = 70s total
+
+    Attributes:
+        id: Unique identifier (e.g., "ship_a_torp_5_blast")
+        position: Center point of blast zone (fixed for lifetime)
+        base_damage: Total damage potential ((AE at detonation) × 1.5)
+        phase: Current lifecycle phase (EXPANSION/PERSISTENCE/DISSIPATION)
+        age: Time since creation in seconds (0.0 → 70.0)
+        current_radius: Current blast radius in units (0.0 → 15.0 → 15.0 → 0.0)
+        owner: Ship that launched torpedo ("ship_a" or "ship_b")
+    """
+    id: str
+    position: Vec2D
+    base_damage: float
+    phase: BlastZonePhase
+    age: float
+    current_radius: float
+    owner: str
 
 @dataclass
 class GameState:
@@ -116,6 +146,7 @@ class GameState:
     ship_a: ShipState
     ship_b: ShipState
     torpedoes: List[TorpedoState] = field(default_factory=list)
+    blast_zones: List[BlastZone] = field(default_factory=list)
 
 @dataclass
 class Orders:
