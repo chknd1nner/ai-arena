@@ -83,7 +83,7 @@ class TorpedoConfig:
     ae_burn_soft_turn_per_second: float
     ae_burn_hard_turn_per_second: float
     blast_expansion_seconds: float
-    blast_duration_seconds: float
+    blast_persistence_seconds: float
     blast_dissipation_seconds: float
     blast_radius_units: float
     blast_damage_multiplier: float
@@ -353,6 +353,21 @@ class ConfigLoader:
             errors.append(
                 f"torpedo.blast_damage_multiplier must be > 0 "
                 f"(got: {config.torpedo.blast_damage_multiplier})"
+            )
+        if config.torpedo.blast_expansion_seconds <= 0:
+            errors.append(
+                f"torpedo.blast_expansion_seconds must be > 0 "
+                f"(got: {config.torpedo.blast_expansion_seconds})"
+            )
+        if config.torpedo.blast_persistence_seconds <= 0:
+            errors.append(
+                f"torpedo.blast_persistence_seconds must be > 0 "
+                f"(got: {config.torpedo.blast_persistence_seconds})"
+            )
+        if config.torpedo.blast_dissipation_seconds <= 0:
+            errors.append(
+                f"torpedo.blast_dissipation_seconds must be > 0 "
+                f"(got: {config.torpedo.blast_dissipation_seconds})"
             )
 
         # Arena validation

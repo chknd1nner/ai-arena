@@ -58,7 +58,7 @@
     "ae_burn_hard_turn_per_second": 0.70,
 
     "blast_expansion_seconds": 5.0,
-    "blast_duration_seconds": 60.0,
+    "blast_persistence_seconds": 60.0,
     "blast_dissipation_seconds": 5.0,
     "blast_radius_units": 15.0,
     "blast_damage_multiplier": 1.5
