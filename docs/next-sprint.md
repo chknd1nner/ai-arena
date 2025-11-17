@@ -1,388 +1,336 @@
-# Next Sprint: Epic 005 - Story 028
+# Next Sprint: Epic 005 - Blast Zone Lifecycle Implementation
 
-**Sprint Goal:** Implement blast zone data models foundation for advanced torpedo system
+**Sprint Goal:** Implement complete 70-second blast zone lifecycle (creation → expansion → persistence → dissipation → removal)
 
-**Story:** [Story 028: Blast Zone Data Models](stories/story-028-blast-zone-data-models.md)
+**Stories in This Sprint:**
+1. [Story 029: Timed Torpedo Detonation](stories/story-029-timed-detonation.md) (Medium, 2-3 hours)
+2. [Story 030: Blast Zone Expansion Phase](stories/story-030-expansion-phase.md) (Small-Medium, 2 hours)
+3. [Story 031: Blast Zone Persistence System](stories/story-031-persistence-system.md) (Small, 1 hour)
+4. [Story 032: Blast Zone Dissipation Phase](stories/story-032-dissipation-phase.md) (Small-Medium, 1-2 hours)
 
-**Estimated Duration:** 1-2 hours
+**Estimated Duration:** 6-8 hours (one 200k token session)
 
-**Branch:** `claude/epic-005-story-028-blast-zone-models-[session-id]`
+**Branch:** `claude/plan-next-sprint-01WzdPTYfSd94DJKWszKHGmV`
 
 ---
 
 ## Sprint Overview
 
-This sprint kicks off **Epic 005: Advanced Torpedo & Blast Zone System**, implementing the foundational data models needed for persistent blast zones with timed detonation. This is P0 work that completes the core weapon system from the game specification.
+This sprint continues **Epic 005: Advanced Torpedo & Blast Zone System** by implementing the complete blast zone lifecycle. This builds on Story 028 (data models) and prepares for damage mechanics (Stories 033-035).
 
-### Why This Story First?
+### What Was Completed Last Sprint
 
-Story 028 is the foundation for all Epic 005 work:
-- Creates the `BlastZone` and `BlastZonePhase` data structures
-- Updates `GameState` to track blast zones
-- Adds `detonation_timer` to torpedoes
-- Establishes configuration parameters
-- **No dependencies** on other Epic 005 stories
-- **Independently testable** via data model tests
-- **Blocks no other work** while in progress
+**Story 028: Blast Zone Data Models** ✅ **COMPLETED & QA PASSED**
 
-### Epic 005 Context
+Successfully implemented all foundational data structures:
+- Added `BlastZonePhase` enum with 3 lifecycle phases (EXPANSION, PERSISTENCE, DISSIPATION)
+- Created `BlastZone` dataclass with 7 fields tracking position, damage, phase, age, radius, and owner
+- Updated `GameState` to track blast zones via `blast_zones: List[BlastZone]`
+- Updated `TorpedoState` to support timed detonation via `detonation_timer: Optional[float]`
+- Added blast zone configuration to config.json
+- All 166 tests passing (17 new + 149 existing, 0 regressions)
 
-From the game specification (docs/game_spec_revised.md lines 351-387):
-- Torpedoes create **persistent blast zones** on detonation
-- Blast zones have 70-second lifecycle: Expansion (5s) → Persistence (60s) → Dissipation (5s)
-- Continuous damage while ships inside blast radius
-- Self-damage enabled (tactical risk/reward)
-- LLM-controlled timed detonation
+### Why These 4 Stories Together?
 
-**Current state:**
-- ✅ Torpedoes launch, fly, and collide (Epic 002-004)
-- ❌ No timed detonation (instant collision only)
-- ❌ No persistent blast zones (damage is instant, not area-based)
-- ❌ No lifecycle phases (expansion/persistence/dissipation)
+These stories form a natural unit that implements the complete blast zone lifecycle:
+- **Story 029** creates blast zones when torpedoes detonate (timed or auto)
+- **Story 030** makes them expand from 0→15 units over 5 seconds
+- **Story 031** makes them persist at 15 units for 60 seconds
+- **Story 032** makes them dissipate from 15→0 units over 5 seconds and get removed
 
-**After Story 028:**
-- ✅ Data structures exist for blast zones
-- ✅ Configuration supports blast zone parameters
-- ⏳ Ready for Story 029 (timed detonation implementation)
+After this sprint, blast zones will have complete visible behavior (lifecycle) but won't damage ships yet. Damage mechanics (Stories 033-035) will be the next sprint.
+
+### Game Specification Reference
+
+From `docs/game_spec_revised.md` (lines 348-395):
+
+**Blast Zone Lifecycle (70 seconds total):**
+- **Expansion (5s):** Radius grows from 0→15 units at 3.0 units/second
+- **Persistence (60s):** Radius holds at 15 units for ~4 decision intervals
+- **Dissipation (5s):** Radius shrinks from 15→0 units at 3.0 units/second, then zone removed
+
+**Timed Detonation:**
+- Format: `{"torpedo_id": "torp_1", "action": "detonate_after", "delay": 5.2}`
+- Delay range: 0.0 to 15.0 seconds
+- Creates blast zone at torpedo's position when timer expires
 
 ---
 
-## Your Task: Implement Story 028
+## Sprint Implementation Instructions
 
-### Step 1: Read the Story
+### Development Workflow
 
-**Start by reading:**
-- [`docs/stories/story-028-blast-zone-data-models.md`](stories/story-028-blast-zone-data-models.md) - Complete story specification
-- [`docs/epic-005-torpedo-blast-zones.md`](epic-005-torpedo-blast-zones.md) - Epic context and technical approach
-- [`docs/game_spec_revised.md`](game_spec_revised.md) lines 351-387 - Blast zone specification
+**IMPORTANT: Work sequentially through the stories in order:**
+1. Complete Story 029 (timed detonation) first
+2. Then Story 030 (expansion phase)
+3. Then Story 031 (persistence system)
+4. Finally Story 032 (dissipation phase)
 
-### Step 2: Understand Current Code
+Each story builds on the previous one, so sequential implementation is required.
 
-**Read these files to understand the existing architecture:**
-- `ai_arena/game_engine/data_models.py` - Current data model patterns (see `ShipState`, `TorpedoState`, `PhaserConfig` enum)
-- `config.json` - Configuration structure (see `torpedo` section)
-- `ai_arena/config/loader.py` - Config validation patterns (see `TorpedoConfig` class)
+**After completing each story:**
+1. Run the full test suite: `pytest tests/ -v`
+2. Verify no regressions (all existing tests still pass)
+3. Update the story's Dev Agent Record with implementation details
+4. Move to the next story
 
-**Key patterns to follow:**
-- Enums use `Enum` class with string values (see `PhaserConfig`, `MovementDirection`)
-- Dataclasses use `@dataclass` decorator with type hints
-- Lists use `field(default_factory=list)` pattern
-- Config classes mirror JSON structure with validation
+---
 
-### Step 3: Implementation Checklist
+## Story 029: Timed Torpedo Detonation
 
-Follow the story's **Technical Requirements** section exactly. Here's the implementation order:
+**Goal:** Enable LLMs to command torpedoes to detonate after a specified delay (0.0-15.0 seconds)
 
-#### 3.1: Data Models (`ai_arena/game_engine/data_models.py`)
+**Read the full story:** [`docs/stories/story-029-timed-detonation.md`](stories/story-029-timed-detonation.md)
 
-**Add BlastZonePhase enum:**
-```python
-class BlastZonePhase(Enum):
-    """Lifecycle phase for blast zones."""
-    EXPANSION = "expansion"       # Growing from 0→15 units
-    PERSISTENCE = "persistence"   # Holding at 15 units
-    DISSIPATION = "dissipation"   # Shrinking from 15→0 units
-```
+**Key Implementation Points:**
 
-**Add BlastZone dataclass:**
-```python
-@dataclass
-class BlastZone:
-    """Persistent area of damage from torpedo detonation.
+1. **LLM Order Parsing** (`ai_arena/llm_adapter/adapter.py`):
+   - Add `_parse_torpedo_action()` method to parse `"detonate_after:X"` commands
+   - Extract action type and delay from command string
+   - Validate delay is in range [0.0, 15.0]
+   - Return tuple: (action_type, delay) where delay is None for movement commands
 
-    Lifecycle: Expansion (5s) → Persistence (60s) → Dissipation (5s) = 70s total
+2. **Apply Detonation Timer** (in `resolve_turn()` when processing orders):
+   - When torpedo order has action="detonate_after", set `torpedo.detonation_timer = delay`
+   - Movement commands don't set timer (remains None)
 
-    Attributes:
-        id: Unique identifier (e.g., "ship_a_torp_5_blast")
-        position: Center point of blast zone (fixed for lifetime)
-        base_damage: Total damage potential ((AE at detonation) × 1.5)
-        phase: Current lifecycle phase (EXPANSION/PERSISTENCE/DISSIPATION)
-        age: Time since creation in seconds (0.0 → 70.0)
-        current_radius: Current blast radius in units (0.0 → 15.0 → 15.0 → 0.0)
-        owner: Ship that launched torpedo ("ship_a" or "ship_b")
-    """
-    id: str
-    position: Vec2D
-    base_damage: float
-    phase: BlastZonePhase
-    age: float
-    current_radius: float
-    owner: str
-```
+3. **Detonation Handler** (`ai_arena/game_engine/physics.py`):
+   - Create `_handle_torpedo_detonations()` method
+   - Called each substep in the substep loop
+   - For each torpedo:
+     - If `detonation_timer is not None`: decrement by dt, check if <= 0
+     - If `ae_remaining <= 0`: auto-detonate (existing behavior)
+   - When detonation triggered:
+     - Create BlastZone at torpedo's position
+     - Set phase=EXPANSION, age=0.0, current_radius=0.0
+     - Calculate base_damage = ae_remaining × blast_damage_multiplier
+     - Set owner = torpedo.owner
+     - Append to state.blast_zones
+     - Record "torpedo_detonated" event
+     - Remove torpedo from state.torpedoes
 
-**Update GameState:**
-```python
-@dataclass
-class GameState:
-    turn: int
-    ship_a: ShipState
-    ship_b: ShipState
-    torpedoes: List[TorpedoState]
-    blast_zones: List[BlastZone] = field(default_factory=list)  # NEW
-```
+4. **Testing** (`tests/test_timed_detonation.py`):
+   - Test parsing various delay values (0.1, 5.0, 10.0, 15.0)
+   - Test invalid delays raise errors (< 0, > 15)
+   - Test timer decrements correctly per substep
+   - Test blast zone created when timer reaches 0
+   - Test auto-detonation when AE depletes
+   - Test multiple torpedoes with different timers
 
-**Update TorpedoState:**
-```python
-@dataclass
-class TorpedoState:
-    # ... existing fields ...
-    detonation_timer: Optional[float] = None  # NEW: Seconds until timed detonation
-```
+**Deliverables:**
+- Modified: `ai_arena/llm_adapter/adapter.py`
+- Modified: `ai_arena/game_engine/physics.py`
+- Created: `tests/test_timed_detonation.py` (~10-12 tests)
 
-#### 3.2: Configuration (`config.json`)
+---
 
-**Add blast zone parameters to torpedo section:**
-```json
-{
-  "torpedo": {
-    "launch_cost_ae": 20,
-    "max_ae_capacity": 40,
-    "speed_units_per_second": 4.0,
-    "max_active_per_ship": 4,
-    "blast_radius_units": 15.0,
-    "blast_damage_multiplier": 1.5,
-    "blast_expansion_seconds": 5.0,
-    "blast_persistence_seconds": 60.0,
-    "blast_dissipation_seconds": 5.0
-  }
-}
-```
+## Story 030: Blast Zone Expansion Phase
 
-**Parameters explained:**
-- `blast_expansion_seconds`: Time for radius to grow from 0→15 units (5.0s)
-- `blast_persistence_seconds`: Time at full radius (60.0s)
-- `blast_dissipation_seconds`: Time for radius to shrink from 15→0 units (5.0s)
-- `blast_radius_units`: Maximum blast zone radius (15.0 units)
-- `blast_damage_multiplier`: Converts AE to damage (1.5×)
+**Goal:** Blast zones expand from 0 to 15 units over 5 seconds at 3.0 units/second
 
-#### 3.3: Config Loader (`ai_arena/config/loader.py`)
+**Read the full story:** [`docs/stories/story-030-expansion-phase.md`](stories/story-030-expansion-phase.md)
 
-**Update TorpedoConfig class:**
-```python
-@dataclass
-class TorpedoConfig:
-    launch_cost_ae: int
-    max_ae_capacity: int
-    speed_units_per_second: float
-    max_active_per_ship: int
-    blast_radius_units: float
-    blast_damage_multiplier: float
-    blast_expansion_seconds: float      # NEW
-    blast_persistence_seconds: float    # NEW
-    blast_dissipation_seconds: float    # NEW
-```
+**Key Implementation Points:**
 
-**Add validation (if not auto-validated):**
-- Ensure all blast zone parameters are positive numbers
-- Consider adding min/max ranges if ConfigLoader does validation
+1. **Blast Zone Update Method** (`ai_arena/game_engine/physics.py`):
+   - Create `_update_blast_zones()` method
+   - Called each substep in the substep loop (BEFORE _handle_torpedo_detonations)
+   - For each blast zone, increment `zone.age += dt`
+   - If phase == EXPANSION:
+     - Calculate growth_rate = max_radius / expansion_duration (from config)
+     - Increment radius: `zone.current_radius += growth_rate * dt`
+     - Clamp radius at max_radius
+     - Check transition: if `zone.age >= expansion_duration`, set phase = PERSISTENCE
 
-#### 3.4: Tests (`tests/test_blast_zone_models.py`)
+2. **Integration into Substep Loop**:
+   ```python
+   for substep in range(self.substeps):
+       # ... existing updates ...
 
-**Create comprehensive test file with ~6-8 tests:**
+       # NEW: Update blast zones FIRST (before new zones created)
+       self._update_blast_zones(new_state.blast_zones, self.fixed_timestep)
 
-```python
-import pytest
-from ai_arena.game_engine.data_models import (
-    BlastZone, BlastZonePhase, GameState, TorpedoState, Vec2D, ShipState
-)
-from ai_arena.config import ConfigLoader
-
-def test_blast_zone_phase_enum():
-    """Test BlastZonePhase enum has all required values."""
-    assert BlastZonePhase.EXPANSION.value == "expansion"
-    assert BlastZonePhase.PERSISTENCE.value == "persistence"
-    assert BlastZonePhase.DISSIPATION.value == "dissipation"
-
-def test_blast_zone_creation():
-    """Test BlastZone can be created with all required fields."""
-    zone = BlastZone(
-        id="ship_a_torp_1_blast",
-        position=Vec2D(100.0, 150.0),
-        base_damage=45.0,
-        phase=BlastZonePhase.EXPANSION,
-        age=0.0,
-        current_radius=0.0,
-        owner="ship_a"
-    )
-    assert zone.id == "ship_a_torp_1_blast"
-    assert zone.position.x == 100.0
-    assert zone.position.y == 150.0
-    assert zone.base_damage == 45.0
-    assert zone.phase == BlastZonePhase.EXPANSION
-    assert zone.age == 0.0
-    assert zone.current_radius == 0.0
-    assert zone.owner == "ship_a"
-
-def test_game_state_with_blast_zones():
-    """Test GameState can hold blast zones."""
-    # Create game state with empty blast zones
-    state = GameState(
-        turn=1,
-        ship_a=ShipState(...),  # Use appropriate constructor
-        ship_b=ShipState(...),
-        torpedoes=[],
-        blast_zones=[]
-    )
-    assert state.blast_zones == []
-
-    # Add blast zone
-    zone = BlastZone(...)
-    state.blast_zones.append(zone)
-    assert len(state.blast_zones) == 1
-
-def test_torpedo_state_with_detonation_timer():
-    """Test TorpedoState has optional detonation_timer field."""
-    # Torpedo without timer (auto-detonate)
-    torp1 = TorpedoState(
-        id="ship_a_torp_1",
-        # ... other fields ...
-        detonation_timer=None
-    )
-    assert torp1.detonation_timer is None
-
-    # Torpedo with timer (timed detonation)
-    torp2 = TorpedoState(
-        id="ship_a_torp_2",
-        # ... other fields ...
-        detonation_timer=8.5
-    )
-    assert torp2.detonation_timer == 8.5
-
-def test_config_loading_blast_zone_params():
-    """Test config.json loads with blast zone parameters."""
-    config = ConfigLoader().load("config.json")
-    assert config.torpedo.blast_expansion_seconds == 5.0
-    assert config.torpedo.blast_persistence_seconds == 60.0
-    assert config.torpedo.blast_dissipation_seconds == 5.0
-    assert config.torpedo.blast_radius_units == 15.0
-    assert config.torpedo.blast_damage_multiplier == 1.5
-
-def test_blast_zone_serialization():
-    """Test BlastZone can be serialized to dict/JSON."""
-    zone = BlastZone(...)
-    # Test serialization logic (if implemented)
-    # This may be handled by dataclasses automatically
-
-# Add more tests as needed:
-# - Test GameState serialization with blast_zones
-# - Test invalid blast zone parameters
-# - Test edge cases (negative age, negative radius, etc.)
-```
-
-### Step 4: Validation
-
-**Before marking story complete, verify:**
-
-1. **All tests pass:**
-   ```bash
-   pytest tests/test_blast_zone_models.py -v
-   pytest tests/ -v  # Full suite to check for regressions
+       # Handle detonations (creates new blast zones)
+       self._handle_torpedo_detonations(new_state, events, self.fixed_timestep)
    ```
 
-2. **Code quality:**
-   - [ ] Type hints on all new fields
-   - [ ] Docstrings on `BlastZone` and `BlastZonePhase`
-   - [ ] Follows existing code style (see other data models)
-   - [ ] No breaking changes to existing code
+3. **Testing** (`tests/test_blast_expansion.py`):
+   - Test radius grows at 3.0 units/second
+   - Test radius at various time points (1s=3.0, 2.5s=7.5, 5s=15.0)
+   - Test phase transitions to PERSISTENCE at 5.0 seconds
+   - Test radius clamped at max_radius
 
-3. **Configuration:**
-   - [ ] `config.json` parses without errors
-   - [ ] Config loader validates new fields
-   - [ ] Sensible default values (match game spec)
+**Deliverables:**
+- Modified: `ai_arena/game_engine/physics.py`
+- Created: `tests/test_blast_expansion.py` (~10 tests)
 
-4. **Acceptance criteria met:**
-   - [ ] All 8 criteria from story checked off
-   - [ ] See "Acceptance Criteria" section in story
+---
 
-### Step 5: Documentation
+## Story 031: Blast Zone Persistence System
 
-**Update the Dev Agent Record in story-028:**
-- Fill in implementation date, agent name, status
-- Write summary of changes made
-- List files created/modified
-- Document test results (e.g., "8 tests, all passing")
-- Note any issues encountered or decisions made
+**Goal:** Blast zones persist at full radius for 60 seconds after expansion
 
-### Step 6: Commit and Push
+**Read the full story:** [`docs/stories/story-031-persistence-system.md`](stories/story-031-persistence-system.md)
 
-**Create clear commit message:**
-```bash
-git add ai_arena/game_engine/data_models.py \
-        ai_arena/config/loader.py \
-        config.json \
-        tests/test_blast_zone_models.py \
-        docs/stories/story-028-blast-zone-data-models.md
+**Key Implementation Points:**
 
-git commit -m "$(cat <<'EOF'
-Story 028: Blast Zone Data Models
+1. **Extend `_update_blast_zones()`** with persistence logic:
+   - Add case for `phase == PERSISTENCE`:
+     - Calculate persistence_end = expansion_duration + persistence_duration
+     - Check if `zone.age >= persistence_end`
+     - If yes, transition to `zone.phase = BlastZonePhase.DISSIPATION`
+     - No radius changes (stays at max_radius)
 
-Implemented foundational data structures for Epic 005 blast zone system:
-- Created BlastZonePhase enum (EXPANSION/PERSISTENCE/DISSIPATION)
-- Created BlastZone dataclass with lifecycle tracking
-- Updated GameState to include blast_zones list
-- Updated TorpedoState with detonation_timer field
-- Added blast zone config parameters to config.json
-- Updated TorpedoConfig in config loader with validation
+2. **Testing** (`tests/test_blast_persistence.py`):
+   - Test zone maintains radius=15.0 during persistence
+   - Test phase transitions at 65 seconds (5 expansion + 60 persistence)
+   - Test age increments correctly
 
-Tests: 8 new tests in test_blast_zone_models.py, all passing
-Coverage: BlastZone creation, serialization, config loading
-Regressions: None - all 149 existing tests still pass
+**Deliverables:**
+- Modified: `ai_arena/game_engine/physics.py`
+- Created: `tests/test_blast_persistence.py` (~7-8 tests)
 
-Ready for Story 029 (Timed Torpedo Detonation)
-EOF
-)"
+---
 
-git push -u origin claude/epic-005-story-028-blast-zone-models-[session-id]
+## Story 032: Blast Zone Dissipation Phase
+
+**Goal:** Blast zones shrink from 15 to 0 units over 5 seconds, then are removed
+
+**Read the full story:** [`docs/stories/story-032-dissipation-phase.md`](stories/story-032-dissipation-phase.md)
+
+**Key Implementation Points:**
+
+1. **Complete `_update_blast_zones()`** with dissipation:
+   - Add case for `phase == DISSIPATION`:
+     - Calculate shrink_rate = max_radius / dissipation_duration
+     - Decrement radius: `zone.current_radius -= shrink_rate * dt`
+     - Clamp at 0: `zone.current_radius = max(0.0, zone.current_radius)`
+     - If radius <= 0.0: append zone to zones_to_remove list
+   - After loop: remove all zones in zones_to_remove from blast_zones list
+
+2. **Testing** (`tests/test_blast_dissipation.py`):
+   - Test blast zone shrinks at 3.0 units/second
+   - Test radius at dissipation times (66s=12.0, 67.5s=7.5, 70s=0.0)
+   - Test blast zone removed when radius = 0.0
+   - Test full lifecycle (expansion → persistence → dissipation → removal)
+
+**Deliverables:**
+- Modified: `ai_arena/game_engine/physics.py`
+- Created: `tests/test_blast_dissipation.py` (~10 tests)
+
+---
+
+## Critical Implementation Notes
+
+### Determinism Requirements
+
+**CRITICAL:** Physics must remain 100% deterministic for replay system.
+
+- Use exact floating-point arithmetic (same as Epic 004)
+- Use config values (don't hardcode 15.0, 5.0, etc.)
+- Increment/decrement by `rate * dt` (not hardcoded 0.1)
+
+### Substep Loop Order
+
+**The substep loop should look like this:**
+
+```python
+for substep in range(self.substeps):
+    # 1. Update resources
+    self._update_resources(new_state.ship_a, valid_orders_a, dt)
+    self._update_resources(new_state.ship_b, valid_orders_b, dt)
+
+    # 2. Update physics
+    self._update_ship_physics(new_state.ship_a, valid_orders_a, dt)
+    self._update_ship_physics(new_state.ship_b, valid_orders_b, dt)
+    for torpedo in new_state.torpedoes:
+        self._update_torpedo_physics(torpedo, ..., dt)
+
+    # 3. NEW: Update blast zones (expansion/persistence/dissipation)
+    self._update_blast_zones(new_state.blast_zones, self.fixed_timestep)
+
+    # 4. NEW: Handle torpedo detonations (creates new blast zones)
+    self._handle_torpedo_detonations(new_state, events, self.fixed_timestep)
+
+    # 5. Check weapon hits
+    phaser_events = self._check_phaser_hits(new_state)
+    events.extend(phaser_events)
 ```
 
----
+### Config Values
 
-## Success Criteria
+From `config.json`:
+- `config.torpedo.blast_expansion_seconds` = 5.0
+- `config.torpedo.blast_persistence_seconds` = 60.0
+- `config.torpedo.blast_dissipation_seconds` = 5.0
+- `config.torpedo.blast_radius_units` = 15.0
+- `config.torpedo.blast_damage_multiplier` = 1.5
 
-**Story 028 is complete when:**
-- [ ] BlastZonePhase enum exists with 3 values
-- [ ] BlastZone dataclass exists with 7 fields
-- [ ] GameState.blast_zones field exists
-- [ ] TorpedoState.detonation_timer field exists
-- [ ] config.json has 5 new blast zone parameters
-- [ ] Config loader validates blast zone parameters
-- [ ] 6-8 new tests in test_blast_zone_models.py pass
-- [ ] All 149 existing tests still pass (no regressions)
-- [ ] Dev Agent Record filled out completely
-- [ ] Code committed and pushed
+Never hardcode these values - always use config.
 
 ---
 
-## Next Steps After Story 028
+## Sprint Success Criteria
 
-Once this story is complete and QA-approved:
-- **Story 029:** Timed Torpedo Detonation (implement command parsing, timer mechanics, blast zone creation)
-- **Story 030:** Blast Zone Expansion Phase (implement radius growth at 3 units/second)
-- **Stories 031-035:** Persistence, dissipation, damage, self-damage, and integration
+**The sprint is DONE when:**
+
+- [ ] All 4 stories (029-032) implemented and tested
+- [ ] Full test suite passes (~203 tests expected)
+- [ ] Blast zones have complete 70-second lifecycle
+- [ ] Torpedoes detonate on timer or AE depletion
+- [ ] Blast zones expand, persist, dissipate, and are removed automatically
+- [ ] All 4 story Dev Agent Records completed
+- [ ] No regressions in existing tests
+- [ ] Determinism validated
+- [ ] Ready for QA validation
+
+**Expected test count progression:**
+- After Story 029: ~176 tests (166 baseline + 10 new)
+- After Story 030: ~186 tests (+10 expansion tests)
+- After Story 031: ~193 tests (+7 persistence tests)
+- After Story 032: ~203 tests (+10 dissipation tests)
+
+---
+
+## What's NOT in This Sprint
+
+**Stories deferred to next sprint:**
+- Story 033: Continuous Blast Damage
+- Story 034: Self-Damage Implementation
+- Story 035: Blast Zone Integration & Balance
+
+**Rationale:** This sprint focuses on blast zone lifecycle mechanics. Damage mechanics and integration are a separate logical unit.
+
+---
+
+## Getting Started
+
+### Pre-Sprint Checklist
+
+1. [ ] Verify Story 028 is complete and merged
+2. [ ] Run baseline test: `pytest tests/ -v` (expect 166 passing)
+3. [ ] Review `docs/game_spec_revised.md` lines 348-395
+4. [ ] Review `docs/epic-005-torpedo-blast-zones.md`
+5. [ ] Ensure on branch: `claude/plan-next-sprint-01WzdPTYfSd94DJKWszKHGmV`
+
+### Story Implementation Order
+
+1. **Story 029** (2-3 hours): Implement timed detonation
+2. **Story 030** (2 hours): Implement expansion phase
+3. **Story 031** (1 hour): Implement persistence phase
+4. **Story 032** (1-2 hours): Implement dissipation phase
+
+**Total estimated time:** 6-8 hours
 
 ---
 
 ## Key References
 
-- **Game Spec:** `docs/game_spec_revised.md` (lines 351-387 for blast zones)
-- **Epic 005:** `docs/epic-005-torpedo-blast-zones.md` (full epic plan)
-- **Story 028:** `docs/stories/story-028-blast-zone-data-models.md` (this story's details)
+- **Game Spec:** `docs/game_spec_revised.md` (lines 348-395)
+- **Epic 005:** `docs/epic-005-torpedo-blast-zones.md`
+- **Stories:** `docs/stories/story-029-*.md` through `story-032-*.md`
 - **CLAUDE.md:** Project development guide
-- **Architecture:** `docs/architecture.md` (system design context)
 
 ---
 
-## Questions or Issues?
-
-If you encounter blockers:
-1. Review the "Instructions for Dev Agent" in the story file
-2. Check Epic 005 for technical approach details
-3. Look at existing data models for patterns
-4. Document issues in Dev Agent Record
-5. Mark story as "Blocked" if unable to complete
-
----
-
-**Good luck! This is the foundation of a major feature. Take your time and follow the patterns established in Epic 004.**
-
-🚀 **Ready to begin Story 028!**
+🚀 **Ready to implement the blast zone lifecycle! Work sequentially, test thoroughly, document completely. Good luck!**
