@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 import copy
+from enum import Enum
 
 from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, BlastZone, Vec2D, MovementType, PhaserConfig
 
@@ -117,10 +118,10 @@ class ReplayRecorder:
     def _serialize_orders(self, orders: Orders) -> dict:
         return {
             "movement": orders.movement.value,
-            "rotation": orders.rotation.value,  # FIX: Missing rotation field
+            "rotation": orders.rotation.value,
             "weapon_action": orders.weapon_action,
             "torpedo_orders": {
-                tid: move.value
+                tid: move.value if hasattr(move, 'value') else move
                 for tid, move in orders.torpedo_orders.items()
             }
         }
