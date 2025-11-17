@@ -17,10 +17,7 @@ from ai_arena.game_engine.data_models import (
 from ai_arena.config import ConfigLoader
 
 
-@pytest.fixture
-def engine():
-    config = ConfigLoader().load("config.json")
-    return PhysicsEngine(config)
+# Fixtures are now in conftest.py (engine, config)
 
 
 def test_strafing_run_maneuver(engine):

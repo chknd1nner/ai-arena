@@ -4,3 +4,4 @@ numpy
 litellm
 pydantic
 python-dotenv
+pytest-asyncio

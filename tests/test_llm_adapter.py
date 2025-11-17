@@ -12,33 +12,7 @@ from ai_arena.game_engine.data_models import (
 from ai_arena.config import ConfigLoader
 
 
-@pytest.fixture
-def config():
-    """Load game configuration for tests."""
-    loader = ConfigLoader()
-    return loader.load("config.json")
-
-
-@pytest.fixture
-def mock_game_state():
-    """Create a mock game state for testing."""
-    ship_a = ShipState(
-        position=Vec2D(0, 0),
-        velocity=Vec2D(0, 0),
-        heading=0.0,
-        shields=100,
-        ae=100,
-        phaser_config=PhaserConfig.WIDE
-    )
-    ship_b = ShipState(
-        position=Vec2D(100, 100),
-        velocity=Vec2D(0, 0),
-        heading=0.0,
-        shields=100,
-        ae=100,
-        phaser_config=PhaserConfig.WIDE
-    )
-    return GameState(turn=1, ship_a=ship_a, ship_b=ship_b)
+# Fixtures are now in conftest.py (config, mock_game_state)
 
 
 # ============= Story 008: Prompt Engineering Tests =============

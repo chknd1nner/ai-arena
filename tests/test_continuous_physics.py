@@ -23,38 +23,7 @@ from ai_arena.game_engine.data_models import (
 from ai_arena.config import ConfigLoader
 
 
-@pytest.fixture
-def config():
-    """Load game configuration for tests."""
-    loader = ConfigLoader()
-    return loader.load("config.json")
-
-
-@pytest.fixture
-def initial_state():
-    """Create initial game state for testing."""
-    return GameState(
-        turn=0,
-        ship_a=ShipState(
-            position=Vec2D(100, 250),
-            velocity=Vec2D(0, 0),
-            heading=0.0,
-            shields=100,
-            ae=50,  # Start with half AE to test regeneration
-            phaser_config=PhaserConfig.WIDE,
-            phaser_cooldown_remaining=0.0
-        ),
-        ship_b=ShipState(
-            position=Vec2D(900, 250),
-            velocity=Vec2D(0, 0),
-            heading=np.pi,
-            shields=100,
-            ae=50,
-            phaser_config=PhaserConfig.WIDE,
-            phaser_cooldown_remaining=0.0
-        ),
-        torpedoes=[]
-    )
+# Fixtures are now in conftest.py (config, initial_state)
 
 
 class TestAERegenerationPerSubstep:
