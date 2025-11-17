@@ -155,11 +155,13 @@ class Orders:
     Movement and rotation are independent:
     - movement: Sets velocity direction relative to heading
     - rotation: Changes heading independent of velocity
+    - torpedo_orders: Dict mapping torpedo_id to action string
+                      (e.g., "HARD_LEFT" or "detonate_after:8.5")
     """
     movement: MovementDirection      # Changed from MovementType
     rotation: RotationCommand        # NEW: Independent rotation
     weapon_action: str
-    torpedo_orders: Dict[str, MovementType] = field(default_factory=dict)
+    torpedo_orders: Dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class Event:

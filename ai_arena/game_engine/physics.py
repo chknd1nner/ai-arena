@@ -2,10 +2,14 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional
 import numpy as np
 from enum import Enum
+import logging
+
+logger = logging.getLogger(__name__)
 
 from ai_arena.game_engine.data_models import (
     GameState, Orders, Event, ShipState, TorpedoState, Vec2D,
-    MovementType, MovementDirection, RotationCommand, PhaserConfig
+    MovementType, MovementDirection, RotationCommand, PhaserConfig,
+    BlastZone, BlastZonePhase
 )
 from ai_arena.config import GameConfig
 
@@ -124,6 +128,9 @@ class PhysicsEngine:
         )
         events.extend(weapon_events_a + weapon_events_b)
 
+        # 2.5. Apply torpedo orders (set detonation timers)
+        self._apply_torpedo_orders(new_state, valid_orders_a, valid_orders_b)
+
         # 3. Simulate action phase with fixed timestep
         # AE costs, regeneration, and cooldown decrement happen per substep in _update_ship_physics()
         for substep in range(self.substeps):
@@ -131,10 +138,17 @@ class PhysicsEngine:
             self._update_ship_physics(new_state.ship_b, valid_orders_b, self.fixed_timestep)
 
             for torpedo in new_state.torpedoes:
-                torpedo_orders = valid_orders_a.torpedo_orders.get(torpedo.id) \
+                torpedo_action_str = valid_orders_a.torpedo_orders.get(torpedo.id) \
                     if torpedo.owner == "ship_a" \
                     else valid_orders_b.torpedo_orders.get(torpedo.id)
-                self._update_torpedo_physics(torpedo, torpedo_orders, self.fixed_timestep)
+                self._update_torpedo_physics(torpedo, torpedo_action_str, self.fixed_timestep)
+
+            # Update blast zone lifecycles (expansion/persistence/dissipation)
+            # Called BEFORE detonations so newly created zones don't update same substep
+            self._update_blast_zones(new_state.blast_zones, self.fixed_timestep)
+
+            # Handle torpedo detonations (creates blast zones)
+            self._handle_torpedo_detonations(new_state, events, self.fixed_timestep)
 
         # 4. Check for hits after full action phase
         phaser_events = self._check_phaser_hits(new_state)
@@ -157,7 +171,8 @@ class PhysicsEngine:
             turn=state.turn,
             ship_a=ShipState(**state.ship_a.__dict__),
             ship_b=ShipState(**state.ship_b.__dict__),
-            torpedoes=[TorpedoState(**t.__dict__) for t in state.torpedoes]
+            torpedoes=[TorpedoState(**t.__dict__) for t in state.torpedoes],
+            blast_zones=[BlastZone(**bz.__dict__) for bz in state.blast_zones]
         )
 
     def _get_movement_ae_rate(self, movement: MovementDirection) -> float:
@@ -253,6 +268,32 @@ class PhysicsEngine:
 
         return events
 
+    def _apply_torpedo_orders(self, state: GameState, orders_a: Orders, orders_b: Orders):
+        """Apply torpedo orders at start of turn.
+
+        Sets detonation timers for torpedoes with detonate_after commands.
+        Movement commands will be applied during substeps.
+
+        Args:
+            state: Current game state
+            orders_a: Orders for ship A
+            orders_b: Orders for ship B
+        """
+        for torpedo in state.torpedoes:
+            # Get orders for this torpedo from the owning ship
+            orders = orders_a if torpedo.owner == "ship_a" else orders_b
+            action_str = orders.torpedo_orders.get(torpedo.id)
+
+            if action_str:
+                try:
+                    action_type, delay = self._parse_torpedo_action(action_str)
+                    if action_type == "detonate_after":
+                        # Set detonation timer
+                        torpedo.detonation_timer = delay
+                    # Movement commands will be handled in _update_torpedo_physics
+                except ValueError as e:
+                    logger.warning(f"Invalid torpedo action '{action_str}' for {torpedo.id}: {e}")
+
     def _apply_ae_regeneration(self, ship: ShipState, dt: float):
         """Apply AE regeneration for one substep.
 
@@ -324,21 +365,188 @@ class PhysicsEngine:
             ship.phaser_cooldown_remaining -= dt
             ship.phaser_cooldown_remaining = max(0.0, ship.phaser_cooldown_remaining)
 
-    def _update_torpedo_physics(self, torpedo: TorpedoState, movement: Optional[MovementType], dt: float):
-        if torpedo.just_launched:
-            pass # No turning on launch turn
-        elif movement:
+    def _update_torpedo_physics(self, torpedo: TorpedoState, action_str: Optional[str], dt: float):
+        """Update torpedo physics for one timestep.
+
+        Args:
+            torpedo: Torpedo to update
+            action_str: Action string (e.g., "HARD_LEFT" or "detonate_after:8.5" or None)
+            dt: Time delta for this substep
+        """
+        # Parse action to determine if it's a movement command
+        movement = None
+        if action_str and not torpedo.just_launched:
+            try:
+                action_type, _ = self._parse_torpedo_action(action_str)
+                # Only process movement commands (ignore detonate_after)
+                if action_type != "detonate_after":
+                    # Parse as MovementType
+                    try:
+                        movement = MovementType[action_type.upper()]
+                    except KeyError:
+                        logger.warning(f"Invalid torpedo movement '{action_type}', defaulting to STRAIGHT")
+                        movement = MovementType.STRAIGHT
+            except ValueError:
+                # Invalid action format, ignore
+                pass
+
+        # Apply movement (rotation)
+        if not torpedo.just_launched and movement:
             rotation_per_dt = self.movement_params.get(movement, {"rotation": 0})["rotation"] * dt / self.action_phase_duration
             torpedo.heading += rotation_per_dt
             torpedo.heading = torpedo.heading % (2 * np.pi)
 
+        # Update velocity and position
         torpedo.velocity = Vec2D(
             np.cos(torpedo.heading) * self.torpedo_speed,
             np.sin(torpedo.heading) * self.torpedo_speed
         )
         torpedo.position = torpedo.position + (torpedo.velocity * dt)
-        # Simplified AE burn (could be more sophisticated based on movement type)
+
+        # AE burn
         torpedo.ae_remaining -= self.config.torpedo.ae_burn_straight_per_second * dt
+
+    def _parse_torpedo_action(self, action_str: str) -> Tuple[str, Optional[float]]:
+        """Parse torpedo action string.
+
+        Args:
+            action_str: e.g., "HARD_LEFT" or "detonate_after:8.5"
+
+        Returns:
+            (action_type, delay) where delay is None for movement commands
+
+        Raises:
+            ValueError: If delay is outside valid range [0.0, 15.0] or format is invalid
+        """
+        if ":" in action_str:
+            # Handle "detonate_after:X" commands
+            parts = action_str.split(":", 1)
+            if parts[0].lower() == "detonate_after":
+                try:
+                    delay = float(parts[1])
+                except (ValueError, IndexError) as e:
+                    logger.error(f"Invalid detonation delay format: {action_str}")
+                    raise ValueError(f"Invalid detonation delay format: {action_str}") from e
+
+                # Validate delay range
+                if delay < 0.0 or delay > 15.0:
+                    raise ValueError(f"Detonation delay {delay} outside valid range [0.0, 15.0]")
+
+                return ("detonate_after", delay)
+
+        # Regular movement command
+        return (action_str, None)
+
+    def _update_blast_zones(self, blast_zones: List[BlastZone], dt: float):
+        """Update all blast zones per substep (lifecycle progression).
+
+        Handles expansion, persistence, and dissipation phases.
+
+        Args:
+            blast_zones: List of active blast zones to update
+            dt: Time step in seconds
+        """
+        zones_to_remove = []
+
+        for zone in blast_zones:
+            # Increment age
+            zone.age += dt
+
+            if zone.phase == BlastZonePhase.EXPANSION:
+                # Calculate expansion rate from config
+                expansion_duration = self.config.torpedo.blast_expansion_seconds
+                max_radius = self.config.torpedo.blast_radius_units
+                growth_rate = max_radius / expansion_duration  # e.g., 15.0 / 5.0 = 3.0 units/s
+
+                # Grow radius
+                zone.current_radius += growth_rate * dt
+                zone.current_radius = min(zone.current_radius, max_radius)  # Cap at max
+
+                # Check for phase transition
+                if zone.age >= expansion_duration:
+                    zone.phase = BlastZonePhase.PERSISTENCE
+                    zone.current_radius = max_radius  # Ensure exact max radius
+
+            elif zone.phase == BlastZonePhase.PERSISTENCE:
+                # Maintain current radius (no changes to radius)
+                # Calculate when persistence ends
+                persistence_start = self.config.torpedo.blast_expansion_seconds
+                persistence_end = persistence_start + self.config.torpedo.blast_persistence_seconds
+
+                # Check for phase transition to dissipation
+                if zone.age >= persistence_end:
+                    zone.phase = BlastZonePhase.DISSIPATION
+
+            elif zone.phase == BlastZonePhase.DISSIPATION:
+                # Shrink radius: 15.0 → 0.0 over dissipation_duration seconds
+                dissipation_duration = self.config.torpedo.blast_dissipation_seconds
+                max_radius = self.config.torpedo.blast_radius_units
+                shrink_rate = max_radius / dissipation_duration  # e.g., 15.0 / 5.0 = 3.0 units/s
+
+                # Shrink radius
+                zone.current_radius -= shrink_rate * dt
+                zone.current_radius = max(0.0, zone.current_radius)  # Clamp at 0
+
+                # Mark for removal when fully dissipated
+                if zone.current_radius <= 0.0:
+                    zones_to_remove.append(zone)
+
+        # Remove dissipated zones
+        for zone in zones_to_remove:
+            blast_zones.remove(zone)
+
+    def _handle_torpedo_detonations(self, state: GameState, events: List[Event], dt: float):
+        """Check for detonations and create blast zones.
+
+        Handles both timed detonations and auto-detonations (AE depleted).
+
+        Args:
+            state: Current game state
+            events: Event list to append detonation events to
+            dt: Time delta for this substep
+        """
+        torpedoes_to_detonate = []
+
+        for torpedo in state.torpedoes:
+            # Decrement timed detonation timer
+            if torpedo.detonation_timer is not None:
+                torpedo.detonation_timer -= dt
+                if torpedo.detonation_timer <= 0.0:
+                    torpedoes_to_detonate.append(torpedo)
+
+            # Auto-detonate when AE depleted (existing behavior)
+            elif torpedo.ae_remaining <= 0:
+                torpedoes_to_detonate.append(torpedo)
+
+        # Create blast zones for detonating torpedoes
+        for torpedo in torpedoes_to_detonate:
+            blast_zone = BlastZone(
+                id=f"{torpedo.id}_blast",
+                position=Vec2D(torpedo.position.x, torpedo.position.y),
+                base_damage=torpedo.ae_remaining * self.config.torpedo.blast_damage_multiplier,
+                phase=BlastZonePhase.EXPANSION,
+                age=0.0,
+                current_radius=0.0,
+                owner=torpedo.owner
+            )
+            state.blast_zones.append(blast_zone)
+
+            # Record detonation event
+            events.append(Event(
+                type="torpedo_detonated",
+                turn=state.turn,
+                data={
+                    "torpedo_id": torpedo.id,
+                    "owner": torpedo.owner,
+                    "position": [torpedo.position.x, torpedo.position.y],
+                    "ae_remaining": torpedo.ae_remaining,
+                    "blast_zone_id": blast_zone.id,
+                    "detonation_type": "timed" if torpedo.detonation_timer is not None else "auto"
+                }
+            ))
+
+            # Remove torpedo from state
+            state.torpedoes.remove(torpedo)
 
     def _check_phaser_hits(self, state: GameState) -> List[Event]:
         """Check if either ship's phaser hit opponent."""

@@ -1,5 +1,5 @@
 import litellm
-from typing import Tuple
+from typing import Tuple, Optional
 import json
 import asyncio
 import numpy as np
@@ -239,6 +239,17 @@ Independent projectiles you control:
 - **Damage**: (AE remaining) × 1.5
 - **Blast radius**: 15 units
 
+**TIMED DETONATION:**
+- Command format: `{{"torpedo_id": "ship_a_torpedo_1", "action": "detonate_after:8.5"}}`
+- Delay range: 0.0 to 15.0 seconds
+- Creates blast zone at torpedo's current position when timer expires
+- Examples:
+  - Immediate: `"action": "detonate_after:0.1"` (panic button)
+  - Short delay: `"action": "detonate_after:5.0"` (catch opponent mid-turn)
+  - Long delay: `"action": "detonate_after:12.0"` (area denial trap)
+- Blast zone lifecycle: Expansion (5s) → Persistence (60s) → Dissipation (5s)
+- Torpedoes still auto-detonate when AE runs out
+
 ## JSON RESPONSE FORMAT
 
 You must respond with valid JSON in this exact format:
@@ -308,6 +319,37 @@ YOUR TORPEDOES ({len(our_torpedoes)}/4):"""
             {"role": "user", "content": user_prompt}
         ]
     
+    def _parse_torpedo_action(self, action_str: str) -> Tuple[str, Optional[float]]:
+        """Parse torpedo action string.
+
+        Args:
+            action_str: e.g., "HARD_LEFT" or "detonate_after:8.5"
+
+        Returns:
+            (action_type, delay) where delay is None for movement commands
+
+        Raises:
+            ValueError: If delay is outside valid range [0.0, 15.0] or format is invalid
+        """
+        if ":" in action_str:
+            # Handle "detonate_after:X" commands
+            parts = action_str.split(":", 1)
+            if parts[0].lower() == "detonate_after":
+                try:
+                    delay = float(parts[1])
+                except (ValueError, IndexError) as e:
+                    logger.error(f"Invalid detonation delay format: {action_str}")
+                    raise ValueError(f"Invalid detonation delay format: {action_str}") from e
+
+                # Validate delay range
+                if delay < 0.0 or delay > 15.0:
+                    raise ValueError(f"Detonation delay {delay} outside valid range [0.0, 15.0]")
+
+                return ("detonate_after", delay)
+
+        # Regular movement command
+        return (action_str, None)
+
     def _parse_orders(
         self,
         response_text: str,
@@ -347,15 +389,13 @@ YOUR TORPEDOES ({len(our_torpedoes)}/4):"""
             # Extract weapon action
             weapon_action = parsed.get("weapon_action", "MAINTAIN_CONFIG")
 
-            # Extract torpedo controls (still uses MovementType)
+            # Extract torpedo controls (now stores raw action strings)
+            # Supports both movement commands ("HARD_LEFT") and detonation ("detonate_after:8.5")
             torpedo_orders = {}
             if "torpedo_orders" in parsed:
-                for tid, move in parsed["torpedo_orders"].items():
-                    try:
-                        torpedo_orders[tid] = MovementType[move.upper()]
-                    except KeyError:
-                        logger.warning(f"{ship_id} invalid torpedo movement '{move}', defaulting to STRAIGHT")
-                        torpedo_orders[tid] = MovementType.STRAIGHT
+                for tid, action in parsed["torpedo_orders"].items():
+                    # Store raw action string - will be parsed in physics engine
+                    torpedo_orders[tid] = str(action).strip()
 
             return Orders(
                 movement=movement,
