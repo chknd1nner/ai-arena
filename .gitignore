@@ -43,8 +43,8 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Replays (optional - remove if you want to track replays)
-replays/*.json
+# Replays - tracked for Claude Code Web access
+# replays/*.json
 
 # Testing
 .pytest_cache/
