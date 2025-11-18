@@ -115,7 +115,7 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events =
     ctx.lineWidth = 1;
 
     // Vertical grid lines (every 100 world units)
-    for (let x = -400; x <= 400; x += 100) {
+    for (let x = 0; x <= 1000; x += 100) {
       const top = worldToScreen({ x, y: worldBounds.maxY }, dims, worldBounds);
       const bottom = worldToScreen({ x, y: worldBounds.minY }, dims, worldBounds);
       ctx.beginPath();
@@ -125,7 +125,7 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events =
     }
 
     // Horizontal grid lines (every 100 world units)
-    for (let y = -300; y <= 300; y += 100) {
+    for (let y = 0; y <= 500; y += 100) {
       const left = worldToScreen({ x: worldBounds.minX, y }, dims, worldBounds);
       const right = worldToScreen({ x: worldBounds.maxX, y }, dims, worldBounds);
       ctx.beginPath();
