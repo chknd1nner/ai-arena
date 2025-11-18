@@ -1,0 +1,21 @@
+=== Page Title ===
+AI Arena
+
+=== Canvas Elements ===
+Found 1 canvas element(s)
+
+=== All Buttons ===
+Button 1: Start New Match
+Button 2: Show Canvas Viewer
+Button 3: Watch Strafing Maneuver
+Button 4: Watch Retreat Coverage
+Button 5: Watch Tactical Showcase
+Button 6: Close Replay
+Button 7: ▶ Play
+Button 8: 0.5x
+Button 9: 1x
+Button 10: 2x
+Button 11: 4x
+
+=== Select Elements ===
+Select 1 options: <option value="">-- Select a replay --</option><option value="scripted_vs_adaptive-s_20251118_045301">scripted vs adaptive-strafe | Winner: tie | Turns: 10 | 11/18/2025, 4:53:01 AM</option><option val
