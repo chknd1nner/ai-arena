@@ -150,6 +150,10 @@ class PhysicsEngine:
             # Handle torpedo detonations (creates blast zones)
             self._handle_torpedo_detonations(new_state, events, self.fixed_timestep)
 
+            # Apply blast damage to ships in zones
+            blast_damage_events = self._apply_blast_damage(new_state, self.fixed_timestep)
+            events.extend(blast_damage_events)
+
         # 4. Check for hits after full action phase
         phaser_events = self._check_phaser_hits(new_state)
         events.extend(phaser_events)
@@ -547,6 +551,50 @@ class PhysicsEngine:
 
             # Remove torpedo from state
             state.torpedoes.remove(torpedo)
+
+    def _apply_blast_damage(self, state: GameState, dt: float) -> List[Event]:
+        """Apply continuous damage to ships in blast zones.
+
+        Damage rate = (base_damage ÷ 15.0) per second
+        Damage per substep = damage_rate × dt
+
+        Args:
+            state: Current game state
+            dt: Time step (typically 0.1 seconds)
+
+        Returns:
+            List of blast damage events
+        """
+        events = []
+
+        for zone in state.blast_zones:
+            # Calculate damage for this zone
+            damage_per_second = zone.base_damage / 15.0
+            damage_this_substep = damage_per_second * dt
+
+            # Check each ship for collision with zone
+            for ship_id, ship in [("ship_a", state.ship_a), ("ship_b", state.ship_b)]:
+                distance = ship.position.distance_to(zone.position)
+
+                if distance < zone.current_radius:
+                    # Ship is inside blast zone - apply damage
+                    ship.shields -= damage_this_substep
+
+                    # Record damage event (for replay/debugging)
+                    events.append(Event(
+                        type="blast_damage",
+                        turn=state.turn,
+                        data={
+                            "ship": ship_id,
+                            "blast_zone_id": zone.id,
+                            "damage": damage_this_substep,
+                            "zone_phase": zone.phase.value,
+                            "zone_radius": zone.current_radius,
+                            "distance": distance
+                        }
+                    ))
+
+        return events
 
     def _check_phaser_hits(self, state: GameState) -> List[Event]:
         """Check if either ship's phaser hit opponent."""

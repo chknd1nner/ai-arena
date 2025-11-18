@@ -232,23 +232,75 @@ Phasers fire automatically if enemy is in arc AND cooldown = 0:
 - Plan your shots carefully - you can't spam every turn!
 - With {cooldown}s cooldown and {turn_duration}s turns, you can fire **~{max_shots} times per turn** maximum
 
-### TORPEDOES
+### TORPEDOES & BLAST ZONES
 
-Independent projectiles you control:
-- **Launch**: 20 AE cost, max 4 in flight
-- **Damage**: (AE remaining) × 1.5
-- **Blast radius**: 15 units
+**Launching:**
+- Cost: 20 AE, Max 4 active per ship
+- Torpedo speed: 15 units/second
+- Torpedoes cannot turn for first turn after launch (just_launched=True)
+- Commands: `STRAIGHT`, `SOFT_LEFT`, `SOFT_RIGHT`, `HARD_LEFT`, `HARD_RIGHT`
 
-**TIMED DETONATION:**
-- Command format: `{{"torpedo_id": "ship_a_torpedo_1", "action": "detonate_after:8.5"}}`
+**Timed Detonation:**
+- Format: `{{"torpedo_id": "ship_a_torpedo_1", "action": "detonate_after:8.5"}}`
 - Delay range: 0.0 to 15.0 seconds
-- Creates blast zone at torpedo's current position when timer expires
-- Examples:
-  - Immediate: `"action": "detonate_after:0.1"` (panic button)
-  - Short delay: `"action": "detonate_after:5.0"` (catch opponent mid-turn)
-  - Long delay: `"action": "detonate_after:12.0"` (area denial trap)
-- Blast zone lifecycle: Expansion (5s) → Persistence (60s) → Dissipation (5s)
-- Torpedoes still auto-detonate when AE runs out
+- Creates blast zone at detonation point
+- Torpedoes also auto-detonate when AE depletes
+
+**Blast Zone Lifecycle (70 seconds total):**
+
+1. **Expansion (5s):** Radius grows from 0→15 units (3 units/s)
+   - Ships can still escape during expansion
+   - Partial damage if caught on edge
+
+2. **Persistence (60s):** Radius holds at 15 units
+   - Lasts ~4 decision intervals (turns)
+   - Creates area denial / forces movement
+   - Multiple zones can overlap
+
+3. **Dissipation (5s):** Radius shrinks from 15→0 units (3 units/s)
+   - Final damage window
+   - Zone removed at radius=0
+
+**Blast Damage:**
+- Base damage = (Torpedo AE at detonation) × 1.5
+- Damage rate = Base damage ÷ 15.0 = damage per second
+- Example: 30 AE torpedo → 45 base damage → 3.0 damage/second
+- Ship in zone for 5 seconds → 5.0 × 3.0 = 15.0 damage
+- Continuous damage applied every 0.1 seconds while in zone
+- Multiple overlapping zones stack damage
+
+**⚠️ SELF-DAMAGE WARNING:**
+- YOUR torpedoes can damage YOU if you're in the blast
+- Plan escape route BEFORE detonating
+- Close-range torpedo use is HIGH RISK
+- Example risk calculation:
+  - Launch at range 20 units, detonate after 8s
+  - Ship moves 10 units/s × 8s = 80 units (if moving at full speed)
+  - If moving AWAY: Safe (80 units > 15 blast radius)
+  - If moving TOWARD or SLOW: SELF-DAMAGE RISK
+
+**Tactical Examples:**
+
+*Immediate Detonation (Panic Button):*
+```json
+{{"torpedo_id": "ship_a_torpedo_1", "action": "detonate_after:0.1"}}
+```
+- Use when enemy closing fast
+- Forces immediate evasion
+- HIGH RISK: You might be in blast too!
+
+*Delayed Trap:*
+```json
+{{"torpedo_id": "ship_a_torpedo_1", "action": "detonate_after:10.0"}}
+```
+- Detonate when enemy predicted to arrive
+- Creates area denial for multiple turns
+- Low self-damage risk if you move away
+
+*Corridor Creation:*
+- Launch 2 torpedoes ahead and behind enemy
+- Detonate both with different delays (e.g., 5.0s and 10.0s)
+- Forces enemy into predictable path between blast zones
 
 ## JSON RESPONSE FORMAT
 
@@ -311,6 +363,24 @@ YOUR TORPEDOES ({len(our_torpedoes)}/4):"""
         user_prompt += f"\n\nENEMY TORPEDOES ({len(enemy_torpedoes)}):"
         for t in enemy_torpedoes:
             user_prompt += f"\n- {t.id}: pos ({t.position.x:.1f}, {t.position.y:.1f}), AE {t.ae_remaining}"
+
+        # Add blast zone information
+        if state.blast_zones:
+            user_prompt += f"\n\nBLAST ZONES ({len(state.blast_zones)} active):"
+            for zone in state.blast_zones:
+                owner_marker = "YOUR" if zone.owner == ship_id else "ENEMY"
+                user_prompt += f"\n- {zone.id} ({owner_marker}):"
+                user_prompt += f"\n  Position: ({zone.position.x:.1f}, {zone.position.y:.1f})"
+                user_prompt += f"\n  Phase: {zone.phase.value}, Age: {zone.age:.1f}s"
+                user_prompt += f"\n  Radius: {zone.current_radius:.1f} units"
+                damage_rate = zone.base_damage / 15.0
+                user_prompt += f"\n  Damage rate: {damage_rate:.2f}/second"
+                distance = us.position.distance_to(zone.position)
+                user_prompt += f"\n  Distance from you: {distance:.1f} units"
+                if distance < zone.current_radius:
+                    user_prompt += f"\n  ⚠️  YOU ARE INSIDE THIS BLAST ZONE! Taking {damage_rate:.2f} damage/second!"
+        else:
+            user_prompt += "\n\nBLAST ZONES: None active"
 
         user_prompt += "\n\nYour orders (JSON only):"
         
