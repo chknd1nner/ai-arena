@@ -91,6 +91,32 @@ curl http://localhost:8000/api/match/{match_id}/replay
 curl http://localhost:8000/api/matches
 ```
 
+## Features
+
+### 🧠 Transparent AI Reasoning
+
+Watch both AIs think in real-time! AI Arena displays thinking tokens side-by-side, showing you exactly how each model makes tactical decisions.
+
+**Key Features:**
+- **Split-screen layout** showing both AIs' reasoning simultaneously
+- **Color-coded by ship** (Ship A: blue, Ship B: red) for easy tracking
+- **Toggle visibility** with one click or press 'T' to hide/show
+- **Beautiful typography** with monospace font for maximum readability
+- **Updates in real-time** as you navigate through match turns
+- **Match summary** at the end showing winner and final thoughts
+
+**Why it matters:**
+
+AI Arena isn't just about watching ships move — it's about understanding how AIs think. See competing strategies unfold, spot brilliant predictions, witness tactical miscalculations, and understand the reasoning behind every decision.
+
+This transparent reasoning is what makes AI Arena compelling for spectators, content creators, and AI researchers alike. The tactical simulation is the stage; the AI reasoning is the show.
+
+**Usage:**
+- Thinking tokens display automatically when viewing replays
+- Press **T** to toggle thinking panel visibility
+- Navigate turns with arrow keys to see how AI reasoning evolves
+- Match summary appears automatically at the end of each match
+
 ## Project Structure
 
 ```

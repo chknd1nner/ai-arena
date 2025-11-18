@@ -84,3 +84,406 @@ button:disabled {
 .matches li small {
   color: #94a3b8;
 }
+
+/* ==========================================
+   Thinking Panel Styles
+   ========================================== */
+
+.thinking-panel {
+  margin: 20px 0;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.thinking-panel-header {
+  padding: 16px 20px;
+  background-color: #252525;
+  border-bottom: 2px solid #333;
+}
+
+.thinking-panel-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.thinking-panel-content {
+  display: flex;
+  flex-direction: row;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+/* ==========================================
+   Thinking Sections (Split Screen)
+   ========================================== */
+
+.thinking-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.thinking-section-a {
+  border-right: 1px solid #333;
+}
+
+.thinking-header {
+  padding: 12px 16px;
+  background-color: #252525;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.thinking-section-a .thinking-header {
+  background-color: rgba(74, 144, 226, 0.1);
+  border-bottom: 2px solid #4A90E2;
+}
+
+.thinking-section-b .thinking-header {
+  background-color: rgba(226, 74, 74, 0.1);
+  border-bottom: 2px solid #E24A4A;
+}
+
+.ship-label {
+  font-weight: bold;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.thinking-section-a .ship-label {
+  color: #4A90E2;
+}
+
+.thinking-section-b .ship-label {
+  color: #E24A4A;
+}
+
+.model-name {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
+
+/* ==========================================
+   Thinking Text Content
+   ========================================== */
+
+.thinking-text {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background-color: #1a1a1a;
+}
+
+.thinking-text pre {
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Custom scrollbar for thinking text */
+.thinking-text::-webkit-scrollbar {
+  width: 10px;
+}
+
+.thinking-text::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.thinking-text::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #555 0%, #444 100%);
+  border-radius: 4px;
+  border: 2px solid #1a1a1a;
+}
+
+.thinking-text::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #666 0%, #555 100%);
+}
+
+/* ==========================================
+   Divider
+   ========================================== */
+
+.thinking-divider {
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    #4A90E2 0%,
+    #666 50%,
+    #E24A4A 100%
+  );
+}
+
+/* ==========================================
+   Responsive Design
+   ========================================== */
+
+@media (max-width: 1024px) {
+  .thinking-panel-content {
+    flex-direction: column;
+    max-height: 600px;
+  }
+
+  .thinking-section-a {
+    border-right: none;
+    border-bottom: 1px solid #333;
+  }
+
+  .thinking-divider {
+    display: none;
+  }
+}
+
+/* ==========================================
+   Syntax Highlighting for Thinking Tokens
+   ========================================== */
+
+.syntax-metric {
+  color: #4EC9B0; /* Teal for metrics */
+  font-weight: 500;
+}
+
+.syntax-movement {
+  color: #C586C0; /* Purple for movement commands */
+  font-weight: 600;
+}
+
+.syntax-weapon {
+  color: #DCDCAA; /* Yellow for weapon configs */
+  font-weight: 600;
+}
+
+.syntax-weapon-type {
+  color: #4FC1FF; /* Light blue for weapon types */
+}
+
+.syntax-number {
+  color: #B5CEA8; /* Light green for numbers */
+}
+
+/* Diff highlighting */
+.thinking-diff-added {
+  background-color: rgba(76, 175, 80, 0.2);
+  border-left: 3px solid #4CAF50;
+}
+
+.thinking-diff-removed {
+  background-color: rgba(244, 67, 54, 0.2);
+  border-left: 3px solid #F44336;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.thinking-diff-unchanged {
+  opacity: 0.6;
+}
+
+/* ==========================================
+   Match Summary Styles
+   ========================================== */
+
+.match-summary {
+  margin: 40px auto;
+  max-width: 900px;
+  padding: 40px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.match-summary-header {
+  margin-bottom: 32px;
+}
+
+.victory-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: bounce 1s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.match-summary-header h1 {
+  margin: 0;
+  font-size: 48px;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.winner-model {
+  margin-top: 8px;
+  font-size: 18px;
+  color: #aaa;
+  font-style: italic;
+}
+
+.match-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin: 32px 0;
+  padding: 24px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.final-thinking {
+  margin: 32px 0;
+  text-align: left;
+}
+
+.final-thinking h3 {
+  margin: 0 0 16px 0;
+  color: #fff;
+  font-size: 20px;
+  text-align: center;
+}
+
+.final-thinking-content {
+  display: flex;
+  gap: 16px;
+}
+
+.final-thinking-ship {
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.final-thinking-header {
+  padding: 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid;
+  font-weight: bold;
+  font-size: 14px;
+  color: #fff;
+}
+
+.final-thinking-text {
+  padding: 16px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e0e0e0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.match-summary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #4A90E2;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #357ABD;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+}
+
+.btn-secondary {
+  background-color: #555;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #666;
+  transform: translateY(-2px);
+}
+
+/* Responsive design for match summary */
+@media (max-width: 768px) {
+  .match-summary {
+    padding: 24px;
+  }
+
+  .match-summary-header h1 {
+    font-size: 32px;
+  }
+
+  .final-thinking-content {
+    flex-direction: column;
+  }
+
+  .match-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .match-summary-actions {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+}
