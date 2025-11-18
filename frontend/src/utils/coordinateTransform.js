@@ -13,10 +13,10 @@
  */
 
 const DEFAULT_WORLD_BOUNDS = {
-  minX: -500,
-  maxX: 500,
-  minY: -400,
-  maxY: 400
+  minX: 0,
+  maxX: 1000,
+  minY: 0,
+  maxY: 500
 };
 
 /**
