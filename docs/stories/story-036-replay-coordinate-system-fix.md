@@ -223,7 +223,9 @@ for (let y = 0; y <= 500; y += 100) { ... }
 
 **Story Status:** Ready for QA
 
-**Git Commit:** (Pending after QA approval)
+**Git Commits:**
+- `02bbf54` - Fix: Story 036 - Replay viewer coordinate system mismatch
+- `60ff2b1` - chore: Add test replay files generated during Story 036 validation
 
 **Related Stories:**
 - All previous stories involving replay visualization
