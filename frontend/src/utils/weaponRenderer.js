@@ -199,14 +199,14 @@ export function renderBlastZone(ctx, blastZone, canvasSize, worldBounds, remaini
   ctx.save();
 
   // Danger zone gradient
-  const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, blastZone.radius * scale);
+  const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, blastZone.current_radius * scale);
   gradient.addColorStop(0, `rgba(255, 100, 0, ${0.4 * intensity})`);
   gradient.addColorStop(0.7, `rgba(255, 50, 0, ${0.2 * intensity})`);
   gradient.addColorStop(1, `rgba(255, 0, 0, ${0.05 * intensity})`);
 
   ctx.fillStyle = gradient;
   ctx.beginPath();
-  ctx.arc(pos.x, pos.y, blastZone.radius * scale, 0, Math.PI * 2);
+  ctx.arc(pos.x, pos.y, blastZone.current_radius * scale, 0, Math.PI * 2);
   ctx.fill();
 
   // Pulsing border
@@ -214,7 +214,7 @@ export function renderBlastZone(ctx, blastZone, canvasSize, worldBounds, remaini
   ctx.lineWidth = 2;
   ctx.setLineDash([10, 5]);
   ctx.beginPath();
-  ctx.arc(pos.x, pos.y, blastZone.radius * scale, 0, Math.PI * 2);
+  ctx.arc(pos.x, pos.y, blastZone.current_radius * scale, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
 
