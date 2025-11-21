@@ -1,7 +1,7 @@
 # Story 038: Thinking Token Display Integration
 
 **Epic:** [Epic 006: Thinking Tokens Visualization & Frontend Polish](../epic-006-thinking-tokens-visualization.md)
-**Status:** Not Started
+**Status:** ✅ Complete (QA Passed)
 **Size:** Medium (~2-3 hours)
 **Priority:** P0
 
@@ -103,9 +103,53 @@ When implementing this story:
 
 ## QA Agent Record
 
-**Validation Date:** [To be filled by QA Agent]
-**Validator:** [To be filled by QA Agent]
-**Verdict:** [To be filled by QA Agent]
+**Validation Date:** 2025-11-21
+**Validator:** Claude Code (Sonnet 4.5) - QA Agent
+**Verdict:** ✅ **QA PASSED**
+
+### QA Test Results
+
+**1. Integration Validation:**
+- ✅ ThinkingPanel appears and displays thinking tokens correctly
+- ✅ Both Ship A and Ship B thinking tokens are correct from replay data
+- ✅ Turn navigation updates thinking tokens correctly on each turn change
+- ✅ Model names extracted correctly (backward compatible with both replay formats)
+
+**2. Toggle Functionality:**
+- ✅ Click toggle button works - panel shows/hides correctly
+- ✅ 'T' key keyboard shortcut works perfectly
+- ✅ Toggle state persists during turn navigation
+- ✅ Hiding panel doesn't break layout - no visual artifacts
+- ✅ Button text changes appropriately ("Hide Thinking" / "Show Thinking")
+- ✅ Button styling shows clear visual feedback (blue when active, gray when hidden)
+
+**3. Layout Validation:**
+- ✅ Thinking panel fits properly in page layout
+- ✅ Canvas, controls, and state overlay all still visible
+- ✅ No overlapping elements detected
+- ✅ Responsive behavior works (tested at multiple window sizes)
+- ✅ Panel positioned above canvas in optimal viewing position
+
+**4. Data Correctness:**
+- ✅ Thinking tokens match replay JSON data
+- ✅ Turn numbers match between panel and playback controls
+- ✅ Model names displayed correctly (Ship A: "thinking-test-a", Ship B: "thinking-test-b")
+- ✅ No data loading issues
+
+**5. User Experience:**
+- ✅ Toggle button is prominent and clear in header
+- ✅ Keyboard shortcut hint visible in button title
+- ✅ Smooth transitions when toggling (no jank)
+- ✅ Overall flow feels natural and intuitive
+
+**Screenshots Evidence:**
+- `screenshots/story-038/01-panel-hidden.png` - Panel hidden state
+- `screenshots/story-038/02-panel-visible.png` - Panel visible state
+- `screenshots/story-038/03-turn-navigation.png` - Turn navigation working
+- `screenshots/story-038/04-turn-3.png` - Advanced to turn 3
+
+**Test Summary:**
+All acceptance criteria met. Integration is seamless, toggle functionality works flawlessly, and the user experience is excellent. The thinking panel is now the centerpiece of the replay viewer.
 
 ### Instructions for QA Agent
 
