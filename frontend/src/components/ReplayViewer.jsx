@@ -4,6 +4,8 @@ import { usePlaybackControls } from '../hooks/usePlaybackControls';
 import CanvasRenderer from './CanvasRenderer';
 import PlaybackControls from './PlaybackControls';
 import StateOverlay from './StateOverlay';
+import ThinkingPanel from './ThinkingPanel';
+import MatchSummary from './MatchSummary';
 
 const ReplayViewer = ({ matchId }) => {
   const { replay, loading, error } = useReplayData(matchId);
@@ -19,6 +21,23 @@ const ReplayViewer = ({ matchId }) => {
     changeSpeed,
     jumpToTurn
   } = usePlaybackControls(totalTurns);
+
+  // Thinking panel visibility toggle (default: visible)
+  const [showThinking, setShowThinking] = React.useState(true);
+
+  // Match summary state
+  const [showSummary, setShowSummary] = React.useState(false);
+  const isMatchComplete = currentTurnIndex === totalTurns - 1;
+
+  // Show summary when reaching final turn
+  React.useEffect(() => {
+    if (isMatchComplete && !playing) {
+      const timer = setTimeout(() => setShowSummary(true), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowSummary(false);
+    }
+  }, [isMatchComplete, playing]);
 
   // Keyboard shortcuts
   React.useEffect(() => {
@@ -48,6 +67,11 @@ const ReplayViewer = ({ matchId }) => {
         case 'End':
           e.preventDefault();
           jumpToTurn(totalTurns - 1);
+          break;
+        case 't':
+        case 'T':
+          e.preventDefault();
+          setShowThinking(prev => !prev);
           break;
         default:
           break;
@@ -130,29 +154,94 @@ const ReplayViewer = ({ matchId }) => {
   }
 
   const currentTurn = replay.turns[currentTurnIndex];
+  const previousTurn = currentTurnIndex > 0 ? replay.turns[currentTurnIndex - 1] : null;
+
+  // Extract thinking tokens
+  const thinkingA = currentTurn?.thinking_a || '';
+  const thinkingB = currentTurn?.thinking_b || '';
+  const prevThinkingA = previousTurn?.thinking_a || '';
+  const prevThinkingB = previousTurn?.thinking_b || '';
+
+  // Extract model names (handle both old and new replay formats)
+  const modelA = replay.model_a || replay.models?.ship_a || 'Unknown Model A';
+  const modelB = replay.model_b || replay.models?.ship_b || 'Unknown Model B';
 
   return (
     <div style={{ width: '100%', padding: '20px' }}>
+      {/* Match Summary - Shows at end of match */}
+      {showSummary && (
+        <MatchSummary
+          matchInfo={{
+            match_id: replay.match_id,
+            model_a: modelA,
+            model_b: modelB,
+            winner: replay.winner
+          }}
+          totalTurns={totalTurns}
+          finalTurn={currentTurn}
+          onWatchAgain={() => {
+            setShowSummary(false);
+            jumpToTurn(0);
+          }}
+        />
+      )}
+
       {/* Match Info Header */}
       <div style={{
         marginBottom: '20px',
         padding: '15px',
         backgroundColor: '#1a1a1a',
         borderRadius: '8px',
-        color: '#fff'
+        color: '#fff',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        <h3 style={{ margin: '0 0 10px 0' }}>
-          Match: {replay.match_id}
-        </h3>
-        <div style={{ display: 'flex', gap: '30px', fontSize: '14px', color: '#aaa' }}>
-          <div>
-            <span style={{ color: '#4A90E2', fontWeight: 'bold' }}>Ship A:</span> {replay.model_a}
-          </div>
-          <div>
-            <span style={{ color: '#E24A4A', fontWeight: 'bold' }}>Ship B:</span> {replay.model_b}
+        <div>
+          <h3 style={{ margin: '0 0 10px 0' }}>
+            Match: {replay.match_id}
+          </h3>
+          <div style={{ display: 'flex', gap: '30px', fontSize: '14px', color: '#aaa' }}>
+            <div>
+              <span style={{ color: '#4A90E2', fontWeight: 'bold' }}>Ship A:</span> {modelA}
+            </div>
+            <div>
+              <span style={{ color: '#E24A4A', fontWeight: 'bold' }}>Ship B:</span> {modelB}
+            </div>
           </div>
         </div>
+        {/* Toggle Thinking Button */}
+        <button
+          onClick={() => setShowThinking(!showThinking)}
+          style={{
+            backgroundColor: showThinking ? '#4A90E2' : '#555',
+            color: '#fff',
+            padding: '10px 20px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            transition: 'all 0.2s ease',
+            boxShadow: showThinking ? '0 2px 8px rgba(74, 144, 226, 0.3)' : 'none'
+          }}
+          title="Toggle thinking tokens (T key)"
+        >
+          {showThinking ? '🧠 Hide Thinking' : '🧠 Show Thinking'}
+        </button>
       </div>
+
+      {/* Thinking Panel */}
+      <ThinkingPanel
+        thinkingA={thinkingA}
+        thinkingB={thinkingB}
+        turnNumber={currentTurnIndex}
+        modelA={modelA}
+        modelB={modelB}
+        isVisible={showThinking}
+        previousThinkingA={prevThinkingA}
+        previousThinkingB={prevThinkingB}
+      />
 
       {/* Canvas Renderer */}
       <div style={{ marginBottom: '20px' }}>
@@ -193,6 +282,8 @@ const ReplayViewer = ({ matchId }) => {
         <span style={{ color: '#4A90E2' }}>← →</span> = Previous/Next Turn
         {' • '}
         <span style={{ color: '#4A90E2' }}>Home/End</span> = First/Last Turn
+        {' • '}
+        <span style={{ color: '#4A90E2' }}>T</span> = Toggle Thinking
       </div>
 
       {/* State Overlay - Shows ship stats, events, and game state */}

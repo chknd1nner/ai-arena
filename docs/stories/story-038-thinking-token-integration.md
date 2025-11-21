@@ -1,7 +1,7 @@
 # Story 038: Thinking Token Display Integration
 
 **Epic:** [Epic 006: Thinking Tokens Visualization & Frontend Polish](../epic-006-thinking-tokens-visualization.md)
-**Status:** Not Started
+**Status:** ✅ Complete (QA Passed)
 **Size:** Medium (~2-3 hours)
 **Priority:** P0
 
@@ -9,9 +9,73 @@
 
 ## Dev Agent Record
 
-**Implementation Date:** [To be filled by Dev Agent]
-**Agent:** [To be filled by Dev Agent]
-**Status:** [To be filled by Dev Agent]
+**Implementation Date:** 2025-11-18
+**Agent:** Claude Code (Sonnet 4.5)
+**Status:** ✅ Ready for QA
+
+### Implementation Summary
+
+Successfully integrated ThinkingPanel into ReplayViewer with full toggle functionality, keyboard shortcuts, and seamless data flow.
+
+**Work Completed:**
+1. Imported ThinkingPanel component into ReplayViewer
+2. Added state management for thinking panel visibility toggle (useState)
+3. Extracted thinking token data from replay turns (thinking_a, thinking_b)
+4. Implemented backward-compatible model name extraction (supports both old and new replay formats)
+5. Added toggle button to Match Info Header with polished styling
+6. Implemented T key keyboard shortcut for toggling
+7. Integrated ThinkingPanel in optimal layout position (after header, before canvas)
+8. Updated keyboard shortcuts help text to include T key
+9. Wired up previous turn thinking data for future diff highlighting
+
+**Layout Decisions:**
+- Positioned ThinkingPanel immediately after Match Info Header (prime real estate above canvas)
+- Toggle button placed in header for easy access without taking additional vertical space
+- Used flexbox layout in header to align match info left and toggle button right
+- Maintained existing canvas, controls, and state overlay positioning
+- Added visual feedback to toggle button (blue when active, gray when inactive, with box-shadow)
+
+**Data Flow Implementation:**
+- currentTurn and previousTurn extracted from replay.turns array
+- Thinking tokens safely extracted with optional chaining and fallback to empty strings
+- Model names handle both formats: `replay.model_a` (old) and `replay.models?.ship_a` (new)
+- All data passed to ThinkingPanel via props with proper null safety
+
+**Files Modified:**
+- `frontend/src/components/ReplayViewer.jsx`:
+  - Line 7: Added ThinkingPanel import
+  - Line 25: Added showThinking state
+  - Lines 56-60: Added T key case to keyboard shortcuts
+  - Lines 142-152: Added thinking token and model name extraction
+  - Lines 157-199: Enhanced Match Info Header with toggle button
+  - Lines 201-211: Integrated ThinkingPanel component
+  - Line 253: Added T key to keyboard shortcuts help
+
+**Code References:**
+- ThinkingPanel import: `ReplayViewer.jsx:7`
+- Toggle state: `ReplayViewer.jsx:25`
+- T key handler: `ReplayViewer.jsx:56-60`
+- Data extraction: `ReplayViewer.jsx:142-152`
+- Toggle button: `ReplayViewer.jsx:181-198`
+- ThinkingPanel integration: `ReplayViewer.jsx:201-211`
+- Keyboard help update: `ReplayViewer.jsx:253`
+
+**Integration Challenges:**
+None - implementation was smooth. The existing ReplayViewer structure was well-organized with clear hooks and state management, making integration straightforward.
+
+**Backward Compatibility:**
+Successfully implemented backward compatibility for both replay formats:
+- Old format: `replay.model_a` and `replay.model_b`
+- New format: `replay.models.ship_a` and `replay.models.ship_b`
+- Uses optional chaining to safely handle missing fields
+
+**UX Enhancements:**
+- Toggle button provides clear visual feedback (color change + box-shadow)
+- Brain emoji (🧠) makes button purpose immediately clear
+- Button text changes: "Hide Thinking" when visible, "Show Thinking" when hidden
+- Tooltip hint: "Toggle thinking tokens (T key)"
+- Smooth transitions on button hover and state change
+- Default state: thinking panel visible (core feature should be visible by default)
 
 ### Instructions for Dev Agent
 
@@ -39,9 +103,53 @@ When implementing this story:
 
 ## QA Agent Record
 
-**Validation Date:** [To be filled by QA Agent]
-**Validator:** [To be filled by QA Agent]
-**Verdict:** [To be filled by QA Agent]
+**Validation Date:** 2025-11-21
+**Validator:** Claude Code (Sonnet 4.5) - QA Agent
+**Verdict:** ✅ **QA PASSED**
+
+### QA Test Results
+
+**1. Integration Validation:**
+- ✅ ThinkingPanel appears and displays thinking tokens correctly
+- ✅ Both Ship A and Ship B thinking tokens are correct from replay data
+- ✅ Turn navigation updates thinking tokens correctly on each turn change
+- ✅ Model names extracted correctly (backward compatible with both replay formats)
+
+**2. Toggle Functionality:**
+- ✅ Click toggle button works - panel shows/hides correctly
+- ✅ 'T' key keyboard shortcut works perfectly
+- ✅ Toggle state persists during turn navigation
+- ✅ Hiding panel doesn't break layout - no visual artifacts
+- ✅ Button text changes appropriately ("Hide Thinking" / "Show Thinking")
+- ✅ Button styling shows clear visual feedback (blue when active, gray when hidden)
+
+**3. Layout Validation:**
+- ✅ Thinking panel fits properly in page layout
+- ✅ Canvas, controls, and state overlay all still visible
+- ✅ No overlapping elements detected
+- ✅ Responsive behavior works (tested at multiple window sizes)
+- ✅ Panel positioned above canvas in optimal viewing position
+
+**4. Data Correctness:**
+- ✅ Thinking tokens match replay JSON data
+- ✅ Turn numbers match between panel and playback controls
+- ✅ Model names displayed correctly (Ship A: "thinking-test-a", Ship B: "thinking-test-b")
+- ✅ No data loading issues
+
+**5. User Experience:**
+- ✅ Toggle button is prominent and clear in header
+- ✅ Keyboard shortcut hint visible in button title
+- ✅ Smooth transitions when toggling (no jank)
+- ✅ Overall flow feels natural and intuitive
+
+**Screenshots Evidence:**
+- `screenshots/story-038/01-panel-hidden.png` - Panel hidden state
+- `screenshots/story-038/02-panel-visible.png` - Panel visible state
+- `screenshots/story-038/03-turn-navigation.png` - Turn navigation working
+- `screenshots/story-038/04-turn-3.png` - Advanced to turn 3
+
+**Test Summary:**
+All acceptance criteria met. Integration is seamless, toggle functionality works flawlessly, and the user experience is excellent. The thinking panel is now the centerpiece of the replay viewer.
 
 ### Instructions for QA Agent
 
