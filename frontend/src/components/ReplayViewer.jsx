@@ -19,7 +19,8 @@ const ReplayViewer = ({ matchId }) => {
     currentTurn: currentTurnIndex,
     togglePlayPause,
     changeSpeed,
-    jumpToTurn
+    jumpToTurn,
+    reset
   } = usePlaybackControls(totalTurns);
 
   // Thinking panel visibility toggle (default: visible)
@@ -38,6 +39,11 @@ const ReplayViewer = ({ matchId }) => {
       setShowSummary(false);
     }
   }, [isMatchComplete, playing]);
+
+  // Reset playback controls when matchId changes
+  React.useEffect(() => {
+    reset();
+  }, [matchId, reset]);
 
   // Keyboard shortcuts
   React.useEffect(() => {

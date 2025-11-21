@@ -161,7 +161,8 @@ For detailed information, see:
 
 - **Architecture & Design** → `docs/architecture.md` (component boundaries, data flow, design patterns, ADRs, deployment)
 - **Game Mechanics** → `docs/game_spec_revised.md` (detailed physics, combat system, balance)
-- **Development Workflow** → `docs/development-workflow.md` (detailed testing procedures, debugging LLM issues, adding features)
+- **Testing Guidelines** → `docs/testing-guidelines.md` (test organization, unit testing, visual/gameplay testing, debugging)
+- **Development Workflow** → `docs/development-workflow.md` (Claude Code Web workflow, branch strategies, PR procedures)
 - **Epic 006** → `docs/epic-006-thinking-tokens-visualization.md` (thinking panel implementation, keyboard shortcuts, styling)
 
 ## Key Constraints & Heuristics

@@ -43,9 +43,6 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Replays - tracked for Claude Code Web access
-# replays/*.json
-
 # Testing
 .pytest_cache/
 .coverage

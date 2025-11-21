@@ -135,17 +135,15 @@ Choose based on:
 
 ### Testing Strategy
 
-**For each feature branch:**
-```bash
-# Before creating PR
-pytest                           # All tests pass
-pytest tests/test_physics.py -v # Verify physics tests
-pytest tests/test_config.py -v  # Verify config tests
+For comprehensive testing guidelines including test file organization, unit testing strategies, visual/gameplay testing, and debugging, see **`docs/testing-guidelines.md`**.
 
-# Check code style (if using)
-black ai_arena/
-flake8 ai_arena/
+**Quick checklist before creating PR:**
+```bash
+pytest                           # All tests pass
+pytest tests/ -v                 # Verify all tests with details
 ```
+
+(For detailed testing procedures, visual validation, and Playwright automation, refer to `docs/testing-guidelines.md`)
 
 ### Common Pitfalls
 
