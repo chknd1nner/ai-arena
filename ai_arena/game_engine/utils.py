@@ -62,13 +62,52 @@ def deep_copy_game_state(state):
 
     Note:
         Uses dataclass reconstruction to ensure proper copying of all fields.
+        Vec2D objects are also deep copied to ensure independence.
     """
-    from ai_arena.game_engine.data_models import GameState, ShipState, TorpedoState, BlastZone
+    from ai_arena.game_engine.data_models import GameState, ShipState, TorpedoState, BlastZone, Vec2D
+
+    def copy_ship(ship):
+        """Deep copy a ShipState including Vec2D objects."""
+        return ShipState(
+            position=Vec2D(ship.position.x, ship.position.y),
+            velocity=Vec2D(ship.velocity.x, ship.velocity.y),
+            heading=ship.heading,
+            shields=ship.shields,
+            ae=ship.ae,
+            phaser_config=ship.phaser_config,
+            reconfiguring_phaser=ship.reconfiguring_phaser,
+            phaser_cooldown_remaining=ship.phaser_cooldown_remaining
+        )
+
+    def copy_torpedo(t):
+        """Deep copy a TorpedoState including Vec2D objects."""
+        return TorpedoState(
+            id=t.id,
+            owner=t.owner,
+            position=Vec2D(t.position.x, t.position.y),
+            velocity=Vec2D(t.velocity.x, t.velocity.y),
+            heading=t.heading,
+            ae_remaining=t.ae_remaining,
+            just_launched=t.just_launched,
+            detonation_timer=t.detonation_timer
+        )
+
+    def copy_blast_zone(bz):
+        """Deep copy a BlastZone including Vec2D objects."""
+        return BlastZone(
+            id=bz.id,
+            owner=bz.owner,
+            position=Vec2D(bz.position.x, bz.position.y),
+            base_damage=bz.base_damage,
+            current_radius=bz.current_radius,
+            phase=bz.phase,
+            age=bz.age
+        )
 
     return GameState(
         turn=state.turn,
-        ship_a=ShipState(**state.ship_a.__dict__),
-        ship_b=ShipState(**state.ship_b.__dict__),
-        torpedoes=[TorpedoState(**t.__dict__) for t in state.torpedoes],
-        blast_zones=[BlastZone(**bz.__dict__) for bz in state.blast_zones]
+        ship_a=copy_ship(state.ship_a),
+        ship_b=copy_ship(state.ship_b),
+        torpedoes=[copy_torpedo(t) for t in state.torpedoes],
+        blast_zones=[copy_blast_zone(bz) for bz in state.blast_zones]
     )
