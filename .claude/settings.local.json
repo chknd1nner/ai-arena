@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(cat:*)",
+      "Bash(python3 -m pip:*)",
+      "Bash(/Users/martinkuek/Library/Python/3.9/bin/pytest tests/ -v)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(gh pr list:*)",
+      "Bash(git merge:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git pull:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git log:*)",
+      "Skill(example-skills:webapp-testing)",
+      "Bash(test:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 30 npm start:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(pip3 install:*)"
+    ]
+  },
+  "outputStyle": "default"
+}
