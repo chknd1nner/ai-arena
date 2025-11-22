@@ -100,7 +100,8 @@ class ReplayRecorder:
             "heading": torpedo.heading,
             "ae_remaining": torpedo.ae_remaining,
             "owner": torpedo.owner,
-            "just_launched": torpedo.just_launched
+            "just_launched": torpedo.just_launched,
+            "detonation_timer": torpedo.detonation_timer
         }
 
     def _serialize_blast_zone(self, blast_zone) -> dict:
