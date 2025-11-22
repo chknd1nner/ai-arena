@@ -1,0 +1,84 @@
+{
+  "match_id": "gpt-4_vs_claude-3-h_20251122_051142",
+  "models": {
+    "ship_a": "gpt-4",
+    "ship_b": "claude-3-haiku"
+  },
+  "winner": "ship_a",
+  "total_turns": 1,
+  "created_at": "2025-11-22T05:11:42.857108",
+  "turns": [
+    {
+      "turn": 1,
+      "state": {
+        "turn": 1,
+        "ship_a": {
+          "position": [
+            50.0,
+            50.0
+          ],
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "heading": 0.0,
+          "shields": 100,
+          "ae": 200,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            250.0,
+            150.0
+          ],
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "heading": 3.14,
+          "shields": 100,
+          "ae": 200,
+          "phaser_config": "FOCUSED",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [
+          {
+            "id": "ship_a_torp_1",
+            "position": [
+              100.0,
+              50.0
+            ],
+            "velocity": [
+              10.0,
+              0.0
+            ],
+            "heading": 0.0,
+            "ae_remaining": 100,
+            "owner": "ship_a",
+            "just_launched": false,
+            "detonation_timer": 4.2
+          }
+        ],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "STOP",
+        "rotation": "NONE",
+        "weapon_action": "LAUNCH_TORPEDO",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "STOP",
+        "rotation": "NONE",
+        "weapon_action": "HOLD",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "Test thinking A",
+      "thinking_b": "Test thinking B",
+      "events": []
+    }
+  ]
+}
