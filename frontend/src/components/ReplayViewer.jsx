@@ -6,6 +6,7 @@ import PlaybackControls from './PlaybackControls';
 import StateOverlay from './StateOverlay';
 import ThinkingPanel from './ThinkingPanel';
 import MatchSummary from './MatchSummary';
+import styles from './ReplayViewer.module.css';
 
 const ReplayViewer = ({ matchId }) => {
   const { replay, loading, error } = useReplayData(matchId);
@@ -91,32 +92,9 @@ const ReplayViewer = ({ matchId }) => {
   // Handle loading state
   if (loading) {
     return (
-      <div style={{
-        padding: '40px',
-        textAlign: 'center',
-        backgroundColor: '#1a1a1a',
-        borderRadius: '8px',
-        margin: '20px'
-      }}>
-        <div style={{
-          display: 'inline-block',
-          width: '40px',
-          height: '40px',
-          border: '4px solid #333',
-          borderTop: '4px solid #4A90E2',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          marginBottom: '15px'
-        }}></div>
-        <p style={{ color: '#aaa', fontSize: '16px' }}>Loading replay...</p>
-        <style>
-          {`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}
-        </style>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p className={styles.loadingText}>Loading replay...</p>
       </div>
     );
   }
@@ -124,18 +102,11 @@ const ReplayViewer = ({ matchId }) => {
   // Handle error state
   if (error) {
     return (
-      <div style={{
-        padding: '30px',
-        textAlign: 'center',
-        backgroundColor: '#2a1a1a',
-        borderRadius: '8px',
-        border: '2px solid #ff4444',
-        margin: '20px'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '10px' }}>⚠️</div>
-        <h3 style={{ color: '#ff4444', margin: '0 0 10px 0' }}>Failed to Load Replay</h3>
-        <p style={{ color: '#ffaaaa', fontSize: '14px', marginBottom: '15px' }}>{error}</p>
-        <p style={{ color: '#888', fontSize: '12px' }}>
+      <div className={styles.errorContainer}>
+        <div className={styles.errorIcon}>⚠️</div>
+        <h3 className={styles.errorTitle}>Failed to Load Replay</h3>
+        <p className={styles.errorMessage}>{error}</p>
+        <p className={styles.errorHint}>
           Please check your network connection and try again.
         </p>
       </div>
@@ -145,16 +116,10 @@ const ReplayViewer = ({ matchId }) => {
   // Handle no replay
   if (!replay) {
     return (
-      <div style={{
-        padding: '30px',
-        textAlign: 'center',
-        backgroundColor: '#1a1a1a',
-        borderRadius: '8px',
-        margin: '20px'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '10px' }}>📁</div>
-        <p style={{ color: '#888', fontSize: '16px' }}>No replay selected</p>
-        <p style={{ color: '#666', fontSize: '14px' }}>Select a replay from the dropdown above</p>
+      <div className={styles.noReplayContainer}>
+        <div className={styles.noReplayIcon}>📁</div>
+        <p className={styles.noReplayText}>No replay selected</p>
+        <p className={styles.noReplayHint}>Select a replay from the dropdown above</p>
       </div>
     );
   }
@@ -173,7 +138,7 @@ const ReplayViewer = ({ matchId }) => {
   const modelB = replay.model_b || replay.models?.ship_b || 'Unknown Model B';
 
   return (
-    <div style={{ width: '100%', padding: '20px' }}>
+    <div className={styles.container}>
       {/* Match Summary - Shows at end of match */}
       {showSummary && (
         <MatchSummary
@@ -193,44 +158,22 @@ const ReplayViewer = ({ matchId }) => {
       )}
 
       {/* Match Info Header */}
-      <div style={{
-        marginBottom: '20px',
-        padding: '15px',
-        backgroundColor: '#1a1a1a',
-        borderRadius: '8px',
-        color: '#fff',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div>
-          <h3 style={{ margin: '0 0 10px 0' }}>
-            Match: {replay.match_id}
-          </h3>
-          <div style={{ display: 'flex', gap: '30px', fontSize: '14px', color: '#aaa' }}>
+      <div className={styles.matchHeader}>
+        <div className={styles.matchInfo}>
+          <h3>Match: {replay.match_id}</h3>
+          <div className={styles.matchModels}>
             <div>
-              <span style={{ color: '#4A90E2', fontWeight: 'bold' }}>Ship A:</span> {modelA}
+              <span className={styles.shipLabelA}>Ship A:</span> {modelA}
             </div>
             <div>
-              <span style={{ color: '#E24A4A', fontWeight: 'bold' }}>Ship B:</span> {modelB}
+              <span className={styles.shipLabelB}>Ship B:</span> {modelB}
             </div>
           </div>
         </div>
         {/* Toggle Thinking Button */}
         <button
           onClick={() => setShowThinking(!showThinking)}
-          style={{
-            backgroundColor: showThinking ? '#4A90E2' : '#555',
-            color: '#fff',
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            fontSize: '14px',
-            transition: 'all 0.2s ease',
-            boxShadow: showThinking ? '0 2px 8px rgba(74, 144, 226, 0.3)' : 'none'
-          }}
+          className={`${styles.toggleThinkingButton} ${showThinking ? styles.active : styles.inactive}`}
           title="Toggle thinking tokens (T key)"
         >
           {showThinking ? '🧠 Hide Thinking' : '🧠 Show Thinking'}
@@ -250,7 +193,7 @@ const ReplayViewer = ({ matchId }) => {
       />
 
       {/* Canvas Renderer */}
-      <div style={{ marginBottom: '20px' }}>
+      <div className={styles.canvasContainer}>
         <CanvasRenderer
           width={1200}
           height={800}
@@ -260,7 +203,7 @@ const ReplayViewer = ({ matchId }) => {
       </div>
 
       {/* Playback Controls */}
-      <div style={{ marginBottom: '20px' }}>
+      <div className={styles.controlsContainer}>
         <PlaybackControls
           playing={playing}
           speed={speed}
@@ -273,23 +216,16 @@ const ReplayViewer = ({ matchId }) => {
       </div>
 
       {/* Keyboard Shortcuts Help */}
-      <div style={{
-        marginBottom: '20px',
-        padding: '12px 15px',
-        backgroundColor: '#1a1a1a',
-        borderRadius: '8px',
-        fontSize: '12px',
-        color: '#888'
-      }}>
-        <strong style={{ color: '#aaa' }}>Keyboard Shortcuts:</strong>
+      <div className={styles.keyboardHelp}>
+        <strong>Keyboard Shortcuts:</strong>
         {' '}
-        <span style={{ color: '#4A90E2' }}>Space</span> = Play/Pause
+        <span className={styles.shortcutKey}>Space</span> = Play/Pause
         {' • '}
-        <span style={{ color: '#4A90E2' }}>← →</span> = Previous/Next Turn
+        <span className={styles.shortcutKey}>← →</span> = Previous/Next Turn
         {' • '}
-        <span style={{ color: '#4A90E2' }}>Home/End</span> = First/Last Turn
+        <span className={styles.shortcutKey}>Home/End</span> = First/Last Turn
         {' • '}
-        <span style={{ color: '#4A90E2' }}>T</span> = Toggle Thinking
+        <span className={styles.shortcutKey}>T</span> = Toggle Thinking
       </div>
 
       {/* State Overlay - Shows ship stats, events, and game state */}

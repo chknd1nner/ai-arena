@@ -1,0 +1,77 @@
+/* MatchSelector Component Styles */
+
+.container {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.formGroup {
+  margin-bottom: var(--spacing-sm);
+}
+
+.label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Loading State */
+.loading {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Error State */
+.error {
+  color: var(--error);
+  font-size: 14px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.retryButton {
+  margin-left: var(--spacing-sm);
+  padding: 4px var(--spacing-sm);
+  font-size: 12px;
+  background-color: var(--accent-blue);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.retryButton:hover {
+  opacity: 0.9;
+}
+
+/* Select Dropdown */
+.select {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-size: 14px;
+  background-color: var(--border-default);
+  color: var(--text-primary);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.select:hover {
+  border-color: var(--accent-blue);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+/* No Matches Message */
+.noMatches {
+  color: var(--text-secondary);
+  font-size: 14px;
+}

@@ -1,0 +1,27 @@
+/**
+ * Spacing System
+ *
+ * Centralized spacing and sizing scale for AI Arena.
+ * Use these variables for consistent margins, padding, and border radii.
+ */
+
+:root {
+  /* Spacing scale */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 15px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 30px;
+  --spacing-3xl: 40px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Common gaps */
+  --gap-sm: 10px;
+  --gap-md: 20px;
+  --gap-lg: 30px;
+}

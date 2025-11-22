@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { worldToScreen, DEFAULT_WORLD_BOUNDS } from '../utils/coordinateTransform';
 import { renderShip } from '../utils/shipRenderer';
 import {
@@ -14,21 +14,28 @@ import {
   renderPhaserFlash,
   renderDamageIndicator
 } from '../utils/visualEffects';
+import {
+  DEFAULT_CANVAS_WIDTH,
+  DEFAULT_CANVAS_HEIGHT,
+  STARFIELD_STAR_COUNT,
+  TORPEDO_TRAIL_LENGTH,
+  TURN_TRANSITION_DURATION,
+  FLASH_DURATION
+} from '../constants/rendering';
 
-const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events = [] }) => {
+const CanvasRenderer = ({ width = DEFAULT_CANVAS_WIDTH, height = DEFAULT_CANVAS_HEIGHT, turnState = null, events = [] }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width, height });
 
   // Track torpedo trails (store last N positions for each torpedo)
   const torpedoTrails = useRef({});
-  const TRAIL_LENGTH = 10; // Number of positions to keep in trail
 
   // Starfield background - regenerate when dimensions change
   const stars = useRef(null);
   const lastStarDimensions = useRef({ width, height });
   if (!stars.current || lastStarDimensions.current.width !== dimensions.width || lastStarDimensions.current.height !== dimensions.height) {
-    stars.current = generateStars(150, dimensions.width, dimensions.height);
+    stars.current = generateStars(STARFIELD_STAR_COUNT, dimensions.width, dimensions.height);
     lastStarDimensions.current = { width: dimensions.width, height: dimensions.height };
   }
 
@@ -36,33 +43,9 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events =
   const prevTurnState = useRef(null);
   const turnChangeTime = useRef(Date.now());
   const animationFrameId = useRef(null);
-  const TURN_TRANSITION_DURATION = 300; // ms for smooth transition
 
   // Track phaser flash effects
   const phaserFlashes = useRef([]);
-  const FLASH_DURATION = 200; // ms
-
-  // Mock ship data for testing (used when no turnState provided)
-  const mockShipData = useMemo(() => ({
-    ship_a: {
-      position: { x: -200, y: 100 },
-      velocity: { x: 15, y: 5 },
-      heading: Math.PI / 4,  // 45 degrees - northeast
-      shields: 85,
-      ae: 67,
-      phaser_config: 'WIDE',
-      torpedo_count: 3
-    },
-    ship_b: {
-      position: { x: 200, y: -100 },
-      velocity: { x: -10, y: 8 },
-      heading: Math.PI * 0.75,  // 135 degrees - northwest
-      shields: 92,
-      ae: 54,
-      phaser_config: 'FOCUSED',
-      torpedo_count: 3
-    }
-  }), []);
 
   // Detect turn state changes and trigger effects
   useEffect(() => {
@@ -144,13 +127,20 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events =
     const timeSinceChange = now - turnChangeTime.current;
     const alpha = Math.min(1, timeSinceChange / TURN_TRANSITION_DURATION);
 
+    // Handle null turnState (show empty arena)
+    if (!turnState) {
+      // Just render the arena boundaries, no ships
+      renderArena(ctx, dims);
+      return;
+    }
+
     // Interpolate between previous and current turn state
     let displayState;
-    if (turnState && prevTurnState.current && alpha < 1) {
+    if (prevTurnState.current && alpha < 1) {
       displayState = interpolateState(prevTurnState.current, turnState, alpha);
     } else {
-      displayState = turnState || mockShipData;
-      if (alpha >= 1 && turnState) {
+      displayState = turnState;
+      if (alpha >= 1) {
         prevTurnState.current = turnState;
       }
     }
@@ -228,7 +218,7 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events =
 
         torpedoTrails.current[torpId].push({ ...torpedo.position });
 
-        if (torpedoTrails.current[torpId].length > TRAIL_LENGTH) {
+        if (torpedoTrails.current[torpId].length > TORPEDO_TRAIL_LENGTH) {
           torpedoTrails.current[torpId].shift();
         }
 
@@ -253,7 +243,7 @@ const CanvasRenderer = ({ width = 1200, height = 800, turnState = null, events =
         renderFrame(ctx, dims);
       });
     }
-  }, [renderArena, turnState, mockShipData, TRAIL_LENGTH, TURN_TRANSITION_DURATION, FLASH_DURATION]);
+  }, [renderArena, turnState]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

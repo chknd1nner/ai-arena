@@ -1,0 +1,39 @@
+/**
+ * Color System
+ *
+ * Centralized color palette for AI Arena.
+ * All colors should be referenced as CSS variables.
+ */
+
+:root {
+  /* Background colors */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-error: #2a1a1a;
+
+  /* Text colors */
+  --text-primary: #ffffff;
+  --text-secondary: #aaaaaa;
+  --text-muted: #888888;
+  --text-disabled: #666666;
+
+  /* Accent colors */
+  --accent-blue: #4A90E2;
+  --accent-red: #E24A4A;
+  --accent-green: #4AE290;
+  --accent-yellow: #E2C74A;
+
+  /* Error/Warning colors */
+  --error: #ff4444;
+  --error-light: #ffaaaa;
+  --warning: #ffaa44;
+
+  /* Border colors */
+  --border-default: #333333;
+  --border-accent: #555555;
+
+  /* Shadow colors */
+  --shadow-blue: rgba(74, 144, 226, 0.3);
+  --shadow-red: rgba(226, 74, 74, 0.3);
+}

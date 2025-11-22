@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import styles from './MatchSelector.module.css';
 
 /**
  * Match selector dropdown component
@@ -44,48 +45,22 @@ const MatchSelector = ({ onSelectMatch, selectedMatchId = null }) => {
   };
 
   return (
-    <div style={{
-      padding: '15px',
-      backgroundColor: '#1a1a1a',
-      borderRadius: '8px',
-      marginBottom: '20px'
-    }}>
-      <div style={{ marginBottom: '10px' }}>
-        <label
-          htmlFor="match-selector"
-          style={{
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            display: 'block',
-            marginBottom: '8px'
-          }}
-        >
+    <div className={styles.container}>
+      <div className={styles.formGroup}>
+        <label htmlFor="match-selector" className={styles.label}>
           Select Replay:
         </label>
 
         {loading && (
-          <div style={{ color: '#aaa', fontSize: '14px' }}>
+          <div className={styles.loading}>
             Loading matches...
           </div>
         )}
 
         {error && (
-          <div style={{ color: '#ff4444', fontSize: '14px', marginBottom: '10px' }}>
+          <div className={styles.error}>
             Error: {error}
-            <button
-              onClick={fetchMatches}
-              style={{
-                marginLeft: '10px',
-                padding: '4px 8px',
-                fontSize: '12px',
-                backgroundColor: '#4A90E2',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
+            <button onClick={fetchMatches} className={styles.retryButton}>
               Retry
             </button>
           </div>
@@ -96,16 +71,7 @@ const MatchSelector = ({ onSelectMatch, selectedMatchId = null }) => {
             id="match-selector"
             value={selectedMatchId || ''}
             onChange={handleChange}
-            style={{
-              width: '100%',
-              padding: '10px',
-              fontSize: '14px',
-              backgroundColor: '#333',
-              color: '#fff',
-              border: '1px solid #555',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
+            className={styles.select}
           >
             <option value="">-- Select a replay --</option>
             {matches.map(match => {
@@ -129,7 +95,7 @@ const MatchSelector = ({ onSelectMatch, selectedMatchId = null }) => {
       </div>
 
       {matches.length === 0 && !loading && !error && (
-        <div style={{ color: '#aaa', fontSize: '14px' }}>
+        <div className={styles.noMatches}>
           No matches available. Start a new match to create a replay!
         </div>
       )}
