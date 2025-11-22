@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 logger = logging.getLogger(__name__)
 
 from ai_arena.game_engine.data_models import (
-    GameState, Orders, MovementType, MovementDirection, RotationCommand,
+    GameState, Orders, MovementDirection, RotationCommand,
     ShipState, Vec2D, PhaserConfig
 )
 from ai_arena.config import GameConfig
