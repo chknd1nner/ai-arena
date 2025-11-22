@@ -1,0 +1,192 @@
+/* StateOverlay Component Styles */
+
+.container {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+/* Top Row: Ship Stats and Turn Counter */
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Ship Stats */
+.shipStats {
+  padding-left: var(--spacing-md);
+  min-width: 180px;
+}
+
+.shipStatsA {
+  composes: shipStats;
+  border-left: 4px solid var(--accent-blue);
+}
+
+.shipStatsB {
+  composes: shipStats;
+  border-left: 4px solid var(--accent-red);
+}
+
+.shipLabel {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.shipLabelA {
+  composes: shipLabel;
+  color: var(--accent-blue);
+}
+
+.shipLabelB {
+  composes: shipLabel;
+  color: var(--accent-red);
+}
+
+.modelName {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-sm);
+}
+
+.statRow {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  color: var(--text-secondary);
+}
+
+.statValue {
+  font-weight: bold;
+}
+
+.shields {
+  composes: statValue;
+}
+
+.shieldsHigh {
+  composes: shields;
+  color: #0f0;
+}
+
+.shieldsMedium {
+  composes: shields;
+  color: #ff0;
+}
+
+.shieldsLow {
+  composes: shields;
+  color: #f00;
+}
+
+.ae {
+  composes: statValue;
+}
+
+.aeHigh {
+  composes: ae;
+  color: #0ff;
+}
+
+.aeMedium {
+  composes: ae;
+  color: #ff0;
+}
+
+.aeLow {
+  composes: ae;
+  color: #f00;
+}
+
+.phaserWide {
+  composes: statValue;
+  color: #0f0;
+}
+
+.phaserFocused {
+  composes: statValue;
+  color: #0ff;
+}
+
+.phaserUnknown {
+  composes: statValue;
+  color: var(--text-muted);
+}
+
+/* Turn Counter */
+.turnCounter {
+  text-align: center;
+  padding: 0 var(--spacing-xl);
+  min-width: 150px;
+}
+
+.turnCounterText {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.matchId {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Event Log */
+.eventLog {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-default);
+}
+
+.eventLogTitle {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-secondary);
+}
+
+.eventList {
+  margin: 0;
+  padding-left: var(--spacing-xl);
+  font-size: 13px;
+  color: #ccc;
+}
+
+.eventItem {
+  margin-bottom: 4px;
+}
+
+/* Torpedo Count */
+.torpedoCount {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-default);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.torpedoCount strong {
+  font-weight: bold;
+}
+
+.torpedoBreakdown {
+  margin-left: var(--spacing-lg);
+}
+
+/* Blast Zones */
+.blastZones {
+  margin-top: 5px;
+  font-size: 13px;
+  color: #ff6600;
+}
+
+.blastZones strong {
+  font-weight: bold;
+}

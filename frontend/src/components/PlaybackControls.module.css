@@ -1,0 +1,131 @@
+/* PlaybackControls Component Styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+/* Top Row: Play/Pause and Speed Controls */
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xl);
+}
+
+/* Play/Pause Button */
+.playPauseButton {
+  padding: var(--spacing-md) 24px;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.playPauseButton.playing {
+  background-color: var(--accent-red);
+}
+
+.playPauseButton.paused {
+  background-color: var(--accent-green);
+}
+
+.playPauseButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Speed Controls */
+.speedControls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.speedLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.speedButton {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 14px;
+  color: var(--text-primary);
+  border: 2px solid;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.speedButton.active {
+  background-color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  font-weight: bold;
+}
+
+.speedButton.inactive {
+  background-color: var(--border-default);
+  border-color: var(--border-default);
+  font-weight: normal;
+}
+
+.speedButton:hover {
+  opacity: 0.9;
+}
+
+/* Timeline Scrubber */
+.timeline {
+  width: 100%;
+}
+
+.timelineHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.turnLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.turnCounter {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Slider */
+.slider {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--accent-blue);
+}
+
+/* Progress Bar */
+.progressBarContainer {
+  width: 100%;
+  height: 4px;
+  background-color: var(--border-default);
+  border-radius: 2px;
+  margin-top: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background-color: var(--accent-blue);
+  transition: width 0.2s ease;
+}

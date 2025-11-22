@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './PlaybackControls.module.css';
 
 const PlaybackControls = ({
   playing,
@@ -17,59 +18,27 @@ const PlaybackControls = ({
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px',
-      padding: '20px',
-      backgroundColor: '#1a1a1a',
-      borderRadius: '8px',
-      color: '#fff'
-    }}>
+    <div className={styles.container}>
       {/* Top Row: Play/Pause and Speed Controls */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '20px'
-      }}>
+      <div className={styles.topRow}>
         {/* Play/Pause Button */}
         <button
           onClick={onTogglePlayPause}
           title={playing ? 'Pause replay (Space)' : 'Play replay (Space)'}
-          style={{
-            padding: '12px 24px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            backgroundColor: playing ? '#E24A4A' : '#4CAF50',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            minWidth: '100px'
-          }}
+          className={`${styles.playPauseButton} ${playing ? styles.playing : styles.paused}`}
         >
           {playing ? '⏸ Pause' : '▶ Play'}
         </button>
 
         {/* Speed Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '14px', color: '#aaa' }}>Speed:</span>
+        <div className={styles.speedControls}>
+          <span className={styles.speedLabel}>Speed:</span>
           {speedOptions.map(speedOption => (
             <button
               key={speedOption}
               onClick={() => onChangeSpeed(speedOption)}
               title={`Set playback speed to ${speedOption}x`}
-              style={{
-                padding: '8px 12px',
-                fontSize: '14px',
-                backgroundColor: speed === speedOption ? '#4A90E2' : '#333',
-                color: '#fff',
-                border: speed === speedOption ? '2px solid #4A90E2' : '2px solid #333',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: speed === speedOption ? 'bold' : 'normal'
-              }}
+              className={`${styles.speedButton} ${speed === speedOption ? styles.active : styles.inactive}`}
             >
               {speedOption}x
             </button>
@@ -78,15 +47,10 @@ const PlaybackControls = ({
       </div>
 
       {/* Timeline Scrubber */}
-      <div style={{ width: '100%' }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px'
-        }}>
-          <span style={{ fontSize: '14px', color: '#aaa' }}>Turn:</span>
-          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
+      <div className={styles.timeline}>
+        <div className={styles.timelineHeader}>
+          <span className={styles.turnLabel}>Turn:</span>
+          <span className={styles.turnCounter}>
             {currentTurn + 1} / {maxTurns}
           </span>
         </div>
@@ -99,31 +63,15 @@ const PlaybackControls = ({
           value={currentTurn}
           onChange={handleSliderChange}
           title="Scrub through replay timeline (← → arrow keys)"
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            outline: 'none',
-            cursor: 'pointer',
-            accentColor: '#4A90E2'
-          }}
+          className={styles.slider}
         />
 
         {/* Progress Bar Visuals */}
-        <div style={{
-          width: '100%',
-          height: '4px',
-          backgroundColor: '#333',
-          borderRadius: '2px',
-          marginTop: '8px',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: `${((currentTurn + 1) / maxTurns) * 100}%`,
-            height: '100%',
-            backgroundColor: '#4A90E2',
-            transition: 'width 0.2s ease'
-          }} />
+        <div className={styles.progressBarContainer}>
+          <div
+            className={styles.progressBarFill}
+            style={{ width: `${((currentTurn + 1) / maxTurns) * 100}%` }}
+          />
         </div>
       </div>
     </div>

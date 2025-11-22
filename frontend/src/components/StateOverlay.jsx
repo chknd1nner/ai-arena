@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './StateOverlay.module.css';
 
 /**
  * Format an event for display
@@ -39,57 +40,48 @@ const formatEvent = (event) => {
  * @param {Object} props - Component props
  * @param {Object} props.ship - Ship state object
  * @param {string} props.label - Ship label (e.g., "Ship A")
- * @param {string} props.color - Ship color for border
+ * @param {string} props.shipId - Ship ID ('A' or 'B')
  * @param {string} props.model - Ship model name (optional)
  */
-const ShipStats = ({ ship, label, color, model }) => {
+const ShipStats = ({ ship, label, shipId, model }) => {
   if (!ship) return null;
 
   const shields = ship.shields !== undefined ? ship.shields : 100;
   const ae = ship.ae !== undefined ? ship.ae : 100;
   const phaserConfig = ship.phaser_config || 'UNKNOWN';
 
+  // Determine CSS classes based on values
+  const shieldsClass = shields > 50 ? styles.shieldsHigh : shields > 25 ? styles.shieldsMedium : styles.shieldsLow;
+  const aeClass = ae > 50 ? styles.aeHigh : ae > 25 ? styles.aeMedium : styles.aeLow;
+  const phaserClass = phaserConfig === 'WIDE' ? styles.phaserWide : phaserConfig === 'FOCUSED' ? styles.phaserFocused : styles.phaserUnknown;
+  const statsClass = shipId === 'A' ? styles.shipStatsA : styles.shipStatsB;
+  const labelClass = shipId === 'A' ? styles.shipLabelA : styles.shipLabelB;
+
   return (
-    <div style={{
-      borderLeft: `4px solid ${color}`,
-      paddingLeft: '12px',
-      minWidth: '180px'
-    }}>
-      <div style={{
-        fontWeight: 'bold',
-        fontSize: '16px',
-        marginBottom: '8px',
-        color: color
-      }}>
+    <div className={statsClass}>
+      <div className={labelClass}>
         {label}
       </div>
       {model && (
-        <div style={{
-          fontSize: '12px',
-          color: '#888',
-          marginBottom: '8px'
-        }}>
+        <div className={styles.modelName}>
           {model}
         </div>
       )}
-      <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-        <span style={{ color: '#aaa' }}>Shields:</span>{' '}
-        <span style={{ color: shields > 50 ? '#0f0' : shields > 25 ? '#ff0' : '#f00', fontWeight: 'bold' }}>
+      <div className={styles.statRow}>
+        <span className={styles.statLabel}>Shields:</span>{' '}
+        <span className={shieldsClass}>
           {shields.toFixed(0)}%
         </span>
       </div>
-      <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-        <span style={{ color: '#aaa' }}>AE:</span>{' '}
-        <span style={{ color: ae > 50 ? '#0ff' : ae > 25 ? '#ff0' : '#f00', fontWeight: 'bold' }}>
+      <div className={styles.statRow}>
+        <span className={styles.statLabel}>AE:</span>{' '}
+        <span className={aeClass}>
           {ae.toFixed(0)}
         </span>
       </div>
-      <div style={{ fontSize: '14px' }}>
-        <span style={{ color: '#aaa' }}>Phaser:</span>{' '}
-        <span style={{
-          color: phaserConfig === 'WIDE' ? '#0f0' : phaserConfig === 'FOCUSED' ? '#0ff' : '#888',
-          fontWeight: 'bold'
-        }}>
+      <div className={styles.statRow}>
+        <span className={styles.statLabel}>Phaser:</span>{' '}
+        <span className={phaserClass}>
           {phaserConfig}
         </span>
       </div>
@@ -113,45 +105,23 @@ const StateOverlay = ({ turnState, turnNumber = 0, maxTurns = 1, events = [], ma
   const recentEvents = events.slice(-5);
 
   return (
-    <div style={{
-      marginTop: '10px',
-      padding: '15px',
-      backgroundColor: '#1a1a1a',
-      borderRadius: '8px',
-      color: '#fff'
-    }}>
+    <div className={styles.container}>
       {/* Top row: Ship stats and turn counter */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: '15px'
-      }}>
+      <div className={styles.topRow}>
         {/* Ship A Stats */}
         <ShipStats
           ship={turnState.ship_a}
           label="Ship A"
-          color="#4A90E2"
+          shipId="A"
           model={matchInfo?.model_a}
         />
 
         {/* Turn Counter */}
-        <div style={{
-          textAlign: 'center',
-          padding: '0 20px',
-          minWidth: '150px'
-        }}>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: 'bold',
-            marginBottom: '5px'
-          }}>
+        <div className={styles.turnCounter}>
+          <div className={styles.turnCounterText}>
             Turn {turnNumber + 1} / {maxTurns}
           </div>
-          <div style={{
-            fontSize: '12px',
-            color: '#888'
-          }}>
+          <div className={styles.matchId}>
             {matchInfo?.match_id && `Match: ${matchInfo.match_id}`}
           </div>
         </div>
@@ -160,34 +130,20 @@ const StateOverlay = ({ turnState, turnNumber = 0, maxTurns = 1, events = [], ma
         <ShipStats
           ship={turnState.ship_b}
           label="Ship B"
-          color="#E24A4A"
+          shipId="B"
           model={matchInfo?.model_b}
         />
       </div>
 
       {/* Event log */}
       {recentEvents.length > 0 && (
-        <div style={{
-          marginTop: '15px',
-          paddingTop: '15px',
-          borderTop: '1px solid #333'
-        }}>
-          <div style={{
-            fontWeight: 'bold',
-            fontSize: '14px',
-            marginBottom: '8px',
-            color: '#aaa'
-          }}>
+        <div className={styles.eventLog}>
+          <div className={styles.eventLogTitle}>
             Recent Events:
           </div>
-          <ul style={{
-            margin: 0,
-            paddingLeft: '20px',
-            fontSize: '13px',
-            color: '#ccc'
-          }}>
+          <ul className={styles.eventList}>
             {recentEvents.map((event, idx) => (
-              <li key={idx} style={{ marginBottom: '4px' }}>
+              <li key={idx} className={styles.eventItem}>
                 {formatEvent(event)}
               </li>
             ))}
@@ -197,15 +153,9 @@ const StateOverlay = ({ turnState, turnNumber = 0, maxTurns = 1, events = [], ma
 
       {/* Torpedo count (if present) */}
       {(turnState.torpedoes && turnState.torpedoes.length > 0) && (
-        <div style={{
-          marginTop: '10px',
-          paddingTop: '10px',
-          borderTop: '1px solid #333',
-          fontSize: '13px',
-          color: '#aaa'
-        }}>
+        <div className={styles.torpedoCount}>
           <strong>Active Torpedoes:</strong> {turnState.torpedoes.length}
-          <span style={{ marginLeft: '15px' }}>
+          <span className={styles.torpedoBreakdown}>
             Ship A: {turnState.torpedoes.filter(t => t.owner === 'ship_a').length} |{' '}
             Ship B: {turnState.torpedoes.filter(t => t.owner === 'ship_b').length}
           </span>
@@ -214,11 +164,7 @@ const StateOverlay = ({ turnState, turnNumber = 0, maxTurns = 1, events = [], ma
 
       {/* Blast zones (if present) */}
       {(turnState.blast_zones && turnState.blast_zones.length > 0) && (
-        <div style={{
-          marginTop: '5px',
-          fontSize: '13px',
-          color: '#ff6600'
-        }}>
+        <div className={styles.blastZones}>
           <strong>⚠ Active Blast Zones:</strong> {turnState.blast_zones.length}
         </div>
       )}
