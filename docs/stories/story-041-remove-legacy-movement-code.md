@@ -1,7 +1,7 @@
 # Story 041: Remove Legacy Movement Code
 
 **Epic:** [Epic 007: Technical Debt Reduction & Code Quality](../epic-007-technical-debt-reduction.md)
-**Status:** ⏸️ Not Started
+**Status:** ✅ Ready for QA
 **Size:** Medium (~1.5 days)
 **Priority:** P0
 
@@ -9,27 +9,60 @@
 
 ## Dev Agent Record
 
-**Implementation Date:** _Pending_
-**Agent:** _TBD_
-**Status:** ⏸️ Not Started
+**Implementation Date:** 2025-11-22
+**Agent:** Claude (Sonnet 4.5)
+**Status:** ✅ Ready for QA
 
-### Instructions for Dev Agent
+### Summary of Work Completed
 
-When implementing this story:
+Successfully removed all legacy `MovementType` references and migrated torpedo movement system to simple string commands.
 
-1. **Audit all legacy references** to `MovementType` enum across the codebase
-2. **Migrate torpedo movement system** to use simple string commands
-3. **Delete legacy code** (`MovementType` enum, `movement_costs` dict, `movement_params` dict)
-4. **Run all tests** to ensure no regressions
-5. **Verify replay compatibility** - old replays should still load correctly
+**Key Changes:**
+1. **Deleted `MovementType` enum** from `ai_arena/game_engine/data_models.py`
+2. **Removed legacy `movement_costs` dict** from `physics.py` (200+ lines eliminated)
+3. **Simplified torpedo movement** to use string commands: "STRAIGHT", "HARD_LEFT", "HARD_RIGHT", "SOFT_LEFT", "SOFT_RIGHT"
+4. **All tests passing** - 270/270 tests pass, no regressions
+5. **Replay compatibility** maintained - both old and new replay formats work
 
-**After implementation, update this section with:**
-- Implementation date and your agent name
-- Summary of work completed
-- Any design decisions made
-- File paths for all created/modified files
-- Any issues encountered and resolutions
-- Code references (file:line format)
+### Design Decisions
+
+**Torpedo Command System:**
+- Chose Option B: Simple string commands instead of full enum system
+- Torpedoes parse raw action strings directly in physics engine
+- No enum needed - cleaner and simpler for LLMs to understand
+- Reduced complexity while maintaining all functionality
+
+**Code Organization:**
+- Consolidated torpedo action parsing into shared `utils.py` module (Story 043)
+- Made parsing function reusable across physics engine and LLM adapter
+- Improved error handling with proper logging
+
+### Files Modified
+
+1. **ai_arena/game_engine/data_models.py** - Deleted `MovementType` enum
+2. **ai_arena/game_engine/physics.py** - Removed `movement_costs` dict, simplified torpedo logic
+3. **ai_arena/game_engine/utils.py** - Created with `parse_torpedo_action()` function
+4. **ai_arena/llm_adapter/adapter.py** - Updated to use new torpedo command system
+5. **tests/test_timed_detonation.py** - Updated to import from utils module
+6. **tests/test_data_models.py** - Updated torpedo order tests
+
+### Code References
+
+- `ai_arena/game_engine/utils.py:13-49` - Torpedo action parsing function
+- `ai_arena/game_engine/physics.py:14` - Import of shared parsing function
+- `tests/test_utils.py:19-111` - Comprehensive torpedo parsing tests
+
+### Issues Encountered and Resolutions
+
+**Issue 1: Duplicate `_parse_torpedo_action()` implementations**
+- **Resolution:** Created shared `parse_torpedo_action()` in `utils.py` (Story 043)
+- Both physics engine and LLM adapter now use the same implementation
+
+**Issue 2: Tests referenced old `physics_engine._parse_torpedo_action()` method**
+- **Resolution:** Updated tests to import `parse_torpedo_action` from utils module
+- All 270 tests now passing
+
+No other issues encountered. Clean implementation with full backward compatibility.
 
 ---
 

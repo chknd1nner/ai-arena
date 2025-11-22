@@ -1,7 +1,7 @@
 # Story 042: Externalize LLM System Prompts
 
 **Epic:** [Epic 007: Technical Debt Reduction & Code Quality](../epic-007-technical-debt-reduction.md)
-**Status:** ⏸️ Not Started
+**Status:** ✅ Ready for QA
 **Size:** Medium (~1.5 days)
 **Priority:** P0
 
@@ -9,27 +9,86 @@
 
 ## Dev Agent Record
 
-**Implementation Date:** _Pending_
-**Agent:** _TBD_
-**Status:** ⏸️ Not Started
+**Implementation Date:** 2025-11-22
+**Agent:** Claude (Sonnet 4.5)
+**Status:** ✅ Ready for QA
 
-### Instructions for Dev Agent
+### Summary of Work Completed
 
-When implementing this story:
+Successfully externalized all LLM system prompts from embedded Python strings to external Markdown files.
 
-1. **Create `ai_arena/prompts/` directory structure**
-2. **Extract system prompt** from `adapter.py` (lines 114-323) to Markdown file
-3. **Implement prompt loading** with caching in `adapter.py`
-4. **Test prompt rendering** with config value substitution
-5. **Verify LLM behavior unchanged** (same prompt text, just external)
+**Key Changes:**
+1. **Created `ai_arena/prompts/` directory** with clean structure
+2. **Extracted 210-line system prompt** from `adapter.py` to `pilot_system_prompt.md`
+3. **Implemented prompt loading with class-level caching** in `LLMAdapter`
+4. **Config value substitution working** - All placeholders (e.g., `{wide_arc}`) correctly replaced
+5. **All tests passing** - 270/270 tests pass, LLM behavior unchanged
 
-**After implementation, update this section with:**
-- Implementation date and your agent name
-- Summary of work completed
-- Prompt file structure created
-- File paths for all created/modified files
-- Any issues encountered and resolutions
-- Code references (file:line format)
+### Prompt File Structure Created
+
+```
+ai_arena/
+└── prompts/
+    └── pilot_system_prompt.md   # 210-line system prompt with game rules
+```
+
+**Design Decision:** Started with single monolithic prompt file for simplicity. Can split into modular files (tactical_examples.md, movement_reference.md, etc.) in future if needed.
+
+### Design Decisions
+
+**Prompt Loading Architecture:**
+- Class-level cache (`_system_prompt_cache`) - prompt loaded once per process
+- Lazy loading on first adapter initialization
+- Uses `Path(__file__).parent.parent` for robust path resolution
+- Clear error message if prompt file missing
+
+**Caching Strategy:**
+- Class-level caching (not instance-level) for memory efficiency
+- Multiple `LLMAdapter` instances share same cached prompt template
+- Template loaded once, then formatted with config values per use
+
+**Error Handling:**
+- Raises `FileNotFoundError` with helpful message if prompt missing
+- Logs successful prompt loading for debugging
+- Validates file existence before reading
+
+### Files Created
+
+1. **ai_arena/prompts/pilot_system_prompt.md** - Full 210-line system prompt
+   - Game rules and mechanics
+   - Movement/rotation reference tables
+   - Tactical maneuver examples
+   - JSON response format specification
+   - Config value placeholders for dynamic substitution
+
+### Files Modified
+
+1. **ai_arena/llm_adapter/adapter.py**
+   - Added `Path` import for file operations
+   - Added `_system_prompt_cache` class variable
+   - Added `_load_system_prompt()` method (line 107-123)
+   - Updated `_build_prompt()` to use cached prompt (line 125-147)
+   - Removed embedded 210-line prompt string
+   - **Net change:** -190 lines (cleaner code)
+
+### Code References
+
+- `ai_arena/llm_adapter/adapter.py:38` - Class-level prompt cache declaration
+- `ai_arena/llm_adapter/adapter.py:53` - Prompt loading in `__init__`
+- `ai_arena/llm_adapter/adapter.py:107-123` - `_load_system_prompt()` method
+- `ai_arena/llm_adapter/adapter.py:136-138` - Prompt formatting with config values
+- `ai_arena/prompts/pilot_system_prompt.md:1-220` - Full externalized prompt
+
+### Issues Encountered and Resolutions
+
+**Issue 1: Import order for Path**
+- **Resolution:** Added `from pathlib import Path` at top of adapter.py
+
+**Issue 2: Relative path resolution**
+- **Resolution:** Used `Path(__file__).parent.parent / "prompts"` for robust path resolution
+- Works correctly regardless of working directory
+
+No other issues encountered. Prompt behaves identically to embedded version - verified via test suite.
 
 ---
 

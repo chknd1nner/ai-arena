@@ -1,0 +1,287 @@
+{
+  "match_id": "mock-ship-_vs_mock-ship-_20251122_035002",
+  "models": {
+    "ship_a": "mock-ship-a",
+    "ship_b": "mock-ship-b"
+  },
+  "winner": "tie",
+  "total_turns": 5,
+  "created_at": "2025-11-22T03:50:02.539452",
+  "turns": [
+    {
+      "turn": 1,
+      "state": {
+        "turn": 0,
+        "ship_a": {
+          "position": [
+            100.0,
+            250.0
+          ],
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "heading": 0.0,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            900.0,
+            250.0
+          ],
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "heading": 3.14159,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "FORWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "BACKWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[SCRIPTED] Turn 1: Following pre-defined orders",
+      "thinking_b": "[SCRIPTED] Turn 1: Following pre-defined orders",
+      "events": []
+    },
+    {
+      "turn": 2,
+      "state": {
+        "turn": 1,
+        "ship_a": {
+          "position": [
+            145.00000000000037,
+            250.0
+          ],
+          "velocity": [
+            3.0,
+            0.0
+          ],
+          "heading": 0.0,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            944.9999999998397,
+            249.99988058846014
+          ],
+          "velocity": [
+            2.999999999989438,
+            -7.960769380425585e-06
+          ],
+          "heading": 3.14159,
+          "shields": 100.0,
+          "ae": 94.94500000000059,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "RIGHT",
+        "rotation": "HARD_LEFT",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "LEFT",
+        "rotation": "SOFT_LEFT",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[SCRIPTED] Turn 2: Following pre-defined orders",
+      "thinking_b": "[SCRIPTED] Turn 2: Following pre-defined orders",
+      "events": []
+    },
+    {
+      "turn": 3,
+      "state": {
+        "turn": 2,
+        "ship_a": {
+          "position": [
+            161.88757296354055,
+            209.52979231585573
+          ],
+          "velocity": [
+            2.1213203435596446,
+            -2.12132034355964
+          ],
+          "heading": 0.7853981633974493,
+          "shields": 100.0,
+          "ae": 89.9950000000004,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            950.8956223633551,
+            205.51727053696698
+          ],
+          "velocity": [
+            0.7764494457920399,
+            -2.8977795392557444
+          ],
+          "heading": 3.403389387799133,
+          "shields": 100.0,
+          "ae": 87.9400000000004,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "FORWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "BACKWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[SCRIPTED] Turn 3: Following pre-defined orders",
+      "thinking_b": "[SCRIPTED] Turn 3: Following pre-defined orders",
+      "events": []
+    },
+    {
+      "turn": 4,
+      "state": {
+        "turn": 3,
+        "ship_a": {
+          "position": [
+            193.7073781169346,
+            241.34959746924977
+          ],
+          "velocity": [
+            2.12132034355964,
+            2.1213203435596446
+          ],
+          "heading": 0.7853981633974493,
+          "shields": 100.0,
+          "ae": 90.03999999999976,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            994.3623154521835,
+            217.16401222384565
+          ],
+          "velocity": [
+            2.8977795392557444,
+            0.7764494457920397
+          ],
+          "heading": 3.403389387799133,
+          "shields": 100.0,
+          "ae": 82.88500000000099,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "LEFT",
+        "rotation": "HARD_RIGHT",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "RIGHT",
+        "rotation": "SOFT_RIGHT",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[SCRIPTED] Turn 4: Following pre-defined orders",
+      "thinking_b": "[SCRIPTED] Turn 4: Following pre-defined orders",
+      "events": []
+    },
+    {
+      "turn": 5,
+      "state": {
+        "turn": 4,
+        "ship_a": {
+          "position": [
+            177.03193718775037,
+            281.90767311903807
+          ],
+          "velocity": [
+            9.18485099360515e-16,
+            3.0
+          ],
+          "heading": 6.283185307179586,
+          "shields": 100.0,
+          "ae": 80.03500000000017,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            988.5443388293243,
+            261.6568443214123
+          ],
+          "velocity": [
+            7.960769379874494e-06,
+            2.999999999989438
+          ],
+          "heading": 3.14159,
+          "shields": 100.0,
+          "ae": 75.88000000000079,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "FORWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "STOP",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[SCRIPTED] Turn 5: Following pre-defined orders",
+      "thinking_b": "[SCRIPTED] Turn 5: Following pre-defined orders",
+      "events": []
+    }
+  ]
+}

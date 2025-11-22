@@ -6,6 +6,7 @@ Tests the ability for LLMs to command torpedoes to detonate after a specified de
 import pytest
 import numpy as np
 from ai_arena.game_engine.physics import PhysicsEngine
+from ai_arena.game_engine.utils import parse_torpedo_action
 from ai_arena.game_engine.data_models import (
     GameState, Orders, ShipState, TorpedoState, Vec2D,
     MovementDirection, RotationCommand, PhaserConfig,
@@ -68,7 +69,7 @@ class TestTorpedoActionParsing:
 
     def test_parse_detonate_after_valid_delay(self, physics_engine):
         """Test parsing valid detonate_after:X commands."""
-        action_type, delay = physics_engine._parse_torpedo_action("detonate_after:5.0")
+        action_type, delay = parse_torpedo_action("detonate_after:5.0")
         assert action_type == "detonate_after"
         assert delay == 5.0
 
@@ -81,23 +82,23 @@ class TestTorpedoActionParsing:
             ("detonate_after:15.0", 15.0),
         ]
         for action_str, expected_delay in test_cases:
-            action_type, delay = physics_engine._parse_torpedo_action(action_str)
+            action_type, delay = parse_torpedo_action(action_str)
             assert action_type == "detonate_after"
             assert delay == expected_delay
 
     def test_parse_detonate_after_invalid_negative_delay(self, physics_engine):
         """Test that negative delays raise ValueError."""
         with pytest.raises(ValueError, match="outside valid range"):
-            physics_engine._parse_torpedo_action("detonate_after:-1.0")
+            parse_torpedo_action("detonate_after:-1.0")
 
     def test_parse_detonate_after_invalid_too_large_delay(self, physics_engine):
         """Test that delays > 15.0 raise ValueError."""
         with pytest.raises(ValueError, match="outside valid range"):
-            physics_engine._parse_torpedo_action("detonate_after:16.0")
+            parse_torpedo_action("detonate_after:16.0")
 
     def test_parse_movement_command_returns_none_delay(self, physics_engine):
         """Test that movement commands return None for delay."""
-        action_type, delay = physics_engine._parse_torpedo_action("HARD_LEFT")
+        action_type, delay = parse_torpedo_action("HARD_LEFT")
         assert action_type == "HARD_LEFT"
         assert delay is None
 
@@ -105,7 +106,7 @@ class TestTorpedoActionParsing:
         """Test parsing all movement command types."""
         commands = ["STRAIGHT", "HARD_LEFT", "HARD_RIGHT", "SOFT_LEFT", "SOFT_RIGHT"]
         for cmd in commands:
-            action_type, delay = physics_engine._parse_torpedo_action(cmd)
+            action_type, delay = parse_torpedo_action(cmd)
             assert action_type == cmd
             assert delay is None
 
