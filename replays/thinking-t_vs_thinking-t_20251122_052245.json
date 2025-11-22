@@ -1,0 +1,177 @@
+{
+  "match_id": "thinking-t_vs_thinking-t_20251122_052245",
+  "models": {
+    "ship_a": "thinking-test-a",
+    "ship_b": "thinking-test-b"
+  },
+  "winner": "tie",
+  "total_turns": 3,
+  "created_at": "2025-11-22T05:22:45.276927",
+  "turns": [
+    {
+      "turn": 1,
+      "state": {
+        "turn": 0,
+        "ship_a": {
+          "position": [
+            100.0,
+            250.0
+          ],
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "heading": 0.0,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            900.0,
+            250.0
+          ],
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "heading": 3.14159,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "FORWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "STOP",
+        "rotation": "NONE",
+        "weapon_action": "RECONFIGURE_FOCUSED",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[AGGRESSIVE] Turn 1: Adaptive tactical decision",
+      "thinking_b": "[DEFENSIVE] Turn 1: Adaptive tactical decision",
+      "events": []
+    },
+    {
+      "turn": 2,
+      "state": {
+        "turn": 1,
+        "ship_a": {
+          "position": [
+            145.00000000000037,
+            250.0
+          ],
+          "velocity": [
+            3.0,
+            0.0
+          ],
+          "heading": 0.0,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            900.0,
+            250.0
+          ],
+          "velocity": [
+            0,
+            0
+          ],
+          "heading": 3.14159,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "FORWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "STOP",
+        "rotation": "NONE",
+        "weapon_action": "RECONFIGURE_FOCUSED",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[AGGRESSIVE] Turn 2: Adaptive tactical decision",
+      "thinking_b": "[DEFENSIVE] Turn 2: Adaptive tactical decision",
+      "events": []
+    },
+    {
+      "turn": 3,
+      "state": {
+        "turn": 2,
+        "ship_a": {
+          "position": [
+            190.00000000000207,
+            250.0
+          ],
+          "velocity": [
+            3.0,
+            0.0
+          ],
+          "heading": 0.0,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "ship_b": {
+          "position": [
+            900.0,
+            250.0
+          ],
+          "velocity": [
+            0,
+            0
+          ],
+          "heading": 3.14159,
+          "shields": 100.0,
+          "ae": 100.0,
+          "phaser_config": "WIDE",
+          "reconfiguring_phaser": false,
+          "phaser_cooldown_remaining": 0.0
+        },
+        "torpedoes": [],
+        "blast_zones": []
+      },
+      "orders_a": {
+        "movement": "FORWARD",
+        "rotation": "NONE",
+        "weapon_action": "MAINTAIN_CONFIG",
+        "torpedo_orders": {}
+      },
+      "orders_b": {
+        "movement": "STOP",
+        "rotation": "NONE",
+        "weapon_action": "RECONFIGURE_FOCUSED",
+        "torpedo_orders": {}
+      },
+      "thinking_a": "[AGGRESSIVE] Turn 3: Adaptive tactical decision",
+      "thinking_b": "[DEFENSIVE] Turn 3: Adaptive tactical decision",
+      "events": []
+    }
+  ]
+}

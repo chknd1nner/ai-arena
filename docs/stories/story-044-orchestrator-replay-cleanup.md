@@ -4,7 +4,7 @@
 **Phase:** 2 - Component Polish
 **Priority:** P1
 **Estimated Effort:** 0.5 days
-**Status:** Complete
+**Status:** QA Passed
 
 ---
 
@@ -186,6 +186,82 @@ This is a **bug fix** rather than a feature. The timed detonation feature (Epic 
 **Post-Story State:**
 
 After this story, all `TorpedoState` fields will be properly serialized in replays, ensuring complete and accurate replay data for all match scenarios.
+
+---
+
+## QA Agent Record
+
+**QA Date:** 2025-11-22
+**QA Agent:** Senior QA Developer
+**Branch:** claude/epic-007-phase-2-0151aVQ9Ns3GpnQrMXpmmaTp
+**Status:** ✅ QA PASSED
+
+### Test Results
+
+#### Unit Tests
+- **Test File:** `tests/test_replay_serialization.py`
+- **Tests Added:** 8 new tests
+- **Total Tests:** 278 (all passing)
+- **Coverage:**
+  - Torpedo serialization with/without timer ✅
+  - Game state serialization with torpedo timers ✅
+  - Full replay serialization ✅
+  - Backward compatibility ✅
+
+#### Code Review
+- **File Modified:** `ai_arena/replay/recorder.py:104`
+- **Change:** Added `"detonation_timer": torpedo.detonation_timer` to `_serialize_torpedo()` method
+- **Implementation:** ✅ Correct - field properly added to serialization
+- **Code Quality:** ✅ Clean, follows existing patterns
+
+#### Replay Data Verification
+- **Replays Checked:** 100 replay files
+- **Replays with Torpedoes:** 1 (gpt-4_vs_claude-3-h_20251122_051142.json)
+- **Detonation Timer Field Present:** ✅ Verified
+- **Sample Value:** `detonation_timer: 4.2`
+- **JSON Serialization:** ✅ Valid
+
+#### Visual Testing (webapp-testing skill)
+- **Frontend:** http://localhost:3000 ✅ Operational
+- **Backend:** http://localhost:8000 ✅ Operational
+- **Canvas Rendering:** ✅ Ships, positions, labels displayed correctly
+- **Turn Navigation:** ✅ Slider functional, states update correctly
+- **Match Summary:** ✅ Winner, turns, models displayed
+- **Thinking Panels:** ✅ Split-screen display operational
+- **Ship Stats:** ✅ Shields, AE, phaser config visible
+
+### Verification Artifacts
+
+**Screenshots:** `screenshots/story-044/`
+- `story-044-match-list.png` - Match selection interface
+- `story-044-replay-initial.png` - Initial game state with canvas
+- `story-044-replay-midgame.png` - Mid-game visualization
+- `story-044-replay-endgame.png` - End-game state with match summary
+- `story-044-replay-final.png` - Final state verification
+
+**Test Script:** `test_story_044_visual.py`
+- Automated Playwright test
+- Replay data verification
+- Visual regression testing
+
+### Issues Found
+
+**None** - All acceptance criteria met.
+
+### QA Summary
+
+Story 044 successfully implements the missing `detonation_timer` field in torpedo serialization. The implementation:
+
+1. ✅ Adds the field to `_serialize_torpedo()` method
+2. ✅ Includes comprehensive test coverage (8 new tests)
+3. ✅ Maintains backward compatibility (None values handled)
+4. ✅ Preserves replay accuracy for timed detonations
+5. ✅ Does not break any existing functionality (278/278 tests passing)
+6. ✅ Frontend visualization unaffected (as expected for backend-only change)
+
+This bug fix ensures complete data integrity in replay files and enables accurate reconstruction of torpedo behavior involving timed detonations.
+
+**Recommendation:** ✅ Approve for merge to main
 
 ---
 
