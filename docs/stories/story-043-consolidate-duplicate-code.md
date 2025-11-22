@@ -1,7 +1,7 @@
 # Story 043: Consolidate Duplicate Code
 
 **Epic:** [Epic 007: Technical Debt Reduction & Code Quality](../epic-007-technical-debt-reduction.md)
-**Status:** ⏸️ Not Started
+**Status:** ✅ Ready for QA
 **Size:** Medium (~1.5 days)
 **Priority:** P0
 
@@ -9,27 +9,133 @@
 
 ## Dev Agent Record
 
-**Implementation Date:** _Pending_
-**Agent:** _TBD_
-**Status:** ⏸️ Not Started
+**Implementation Date:** 2025-11-22
+**Agent:** Claude (Sonnet 4.5)
+**Status:** ✅ Ready for QA
 
-### Instructions for Dev Agent
+### Summary of Work Completed
 
-When implementing this story:
+Successfully consolidated all duplicate code into shared utility modules with comprehensive test coverage.
 
-1. **Create shared utility modules** (`game_engine/utils.py`, `llm_adapter/prompt_formatter.py`)
-2. **Consolidate duplicate implementations** (torpedo parsing, state copying, formatting)
-3. **Update all import statements** to use shared utilities
-4. **Run comprehensive tests** to ensure no regressions
-5. **Verify Match Orchestrator uses public APIs** (not private methods)
+**Key Changes:**
+1. **Created `ai_arena/game_engine/utils.py`** with shared game utilities:
+   - `parse_torpedo_action()` - Consolidated torpedo action parsing
+   - `deep_copy_game_state()` - Single source of truth for state copying
+2. **Created `ai_arena/llm_adapter/prompt_formatter.py`** with 6 formatting functions:
+   - `format_ship_status()`, `format_enemy_status()`, `format_torpedo_list()`
+   - `format_blast_zones()`, `build_user_prompt()`, `format_system_prompt_with_config()`
+3. **Removed duplicate `_parse_torpedo_action()`** from both physics.py and adapter.py
+4. **Made `PhysicsEngine.copy_state()` public** (was private `_copy_state()`)
+5. **Enhanced state copying** to properly deep copy Vec2D objects
+6. **Added 17 comprehensive unit tests** in `tests/test_utils.py`
+7. **All 270 tests passing** - no regressions
 
-**After implementation, update this section with:**
-- Implementation date and your agent name
-- Summary of work completed
-- Design decisions for shared utilities
-- File paths for all created/modified files
-- Any issues encountered and resolutions
-- Code references (file:line format)
+### Design Decisions
+
+**Shared Utilities Architecture:**
+- **utils.py for game logic** - Torpedo parsing, state copying (domain logic)
+- **prompt_formatter.py for presentation** - Pure formatting functions (no side effects)
+- **Clear separation of concerns** - Game logic vs. LLM presentation layer
+
+**State Copying Strategy:**
+- Enhanced `deep_copy_game_state()` to create new Vec2D instances
+- Fixes critical bug: original implementation shared Vec2D references
+- Added deep copying of `detonation_timer` field (was missing)
+- Uses explicit field copying for better control and debugging
+
+**Public API Design:**
+- Made `PhysicsEngine.copy_state()` public method
+- Match Orchestrator now uses public API (not private `_copy_state()`)
+- Better encapsulation and clearer contracts
+
+**Prompt Formatting:**
+- All formatters are pure functions (no side effects)
+- Easily testable in isolation
+- Reusable across different LLM adapters
+- Single source of truth for prompt structure
+
+### Files Created
+
+1. **ai_arena/game_engine/utils.py** (113 lines)
+   - `parse_torpedo_action()` - Shared torpedo parsing
+   - `deep_copy_game_state()` - Enhanced deep copying with Vec2D handling
+
+2. **ai_arena/llm_adapter/prompt_formatter.py** (165 lines)
+   - `format_ship_status()` - Ship state formatting
+   - `format_enemy_status()` - Enemy status with distance
+   - `format_torpedo_list()` - Torpedo list formatting
+   - `format_blast_zones()` - Blast zone information
+   - `build_user_prompt()` - Complete user prompt assembly
+   - `format_system_prompt_with_config()` - Config value injection
+
+3. **tests/test_utils.py** (273 lines)
+   - 13 tests for `parse_torpedo_action()` (movement, detonation, errors)
+   - 4 tests for `deep_copy_game_state()` (basic copy, independence, torpedoes, blast zones)
+
+### Files Modified
+
+1. **ai_arena/game_engine/physics.py**
+   - Added import: `from ai_arena.game_engine.utils import parse_torpedo_action, deep_copy_game_state`
+   - Made `copy_state()` public method (calls `deep_copy_game_state()`)
+   - Removed duplicate `_parse_torpedo_action()` method
+   - Uses shared utilities throughout
+
+2. **ai_arena/llm_adapter/adapter.py**
+   - Added imports: `from pathlib import Path`
+   - Added imports: `from ai_arena.llm_adapter.prompt_formatter import ...`
+   - Updated `_build_prompt()` to use shared formatters (line 125-147)
+   - Removed duplicate `_parse_torpedo_action()` method
+   - **Net reduction:** ~200 lines of duplicate code eliminated
+
+3. **tests/test_timed_detonation.py**
+   - Added import: `from ai_arena.game_engine.utils import parse_torpedo_action`
+   - Updated tests to use shared function (not physics_engine method)
+
+### Code References
+
+**Shared Utilities:**
+- `ai_arena/game_engine/utils.py:13-49` - `parse_torpedo_action()` function
+- `ai_arena/game_engine/utils.py:52-113` - `deep_copy_game_state()` function
+- `ai_arena/game_engine/physics.py:14` - Import of shared utilities
+- `ai_arena/game_engine/physics.py:162-167` - Public `copy_state()` method
+
+**Prompt Formatters:**
+- `ai_arena/llm_adapter/prompt_formatter.py:12-43` - `format_ship_status()`
+- `ai_arena/llm_adapter/prompt_formatter.py:46-58` - `format_enemy_status()`
+- `ai_arena/llm_adapter/prompt_formatter.py:61-78` - `format_torpedo_list()`
+- `ai_arena/llm_adapter/prompt_formatter.py:81-115` - `format_blast_zones()`
+- `ai_arena/llm_adapter/prompt_formatter.py:118-145` - `build_user_prompt()`
+- `ai_arena/llm_adapter/prompt_formatter.py:148-165` - `format_system_prompt_with_config()`
+
+**Test Coverage:**
+- `tests/test_utils.py:19-111` - Torpedo parsing tests (13 tests)
+- `tests/test_utils.py:114-273` - State copying tests (4 tests)
+
+### Issues Encountered and Resolutions
+
+**Issue 1: Vec2D objects shared between original and copied state**
+- **Problem:** Original implementation used `ShipState(**state.ship_a.__dict__)` which shared Vec2D references
+- **Resolution:** Enhanced `deep_copy_game_state()` to create new Vec2D instances
+- **Impact:** Fixed critical bug where modifying copied state affected original
+- **Verification:** Test `test_deep_copy_independence` now passes
+
+**Issue 2: Missing `detonation_timer` field in torpedo deep copy**
+- **Problem:** Torpedo copying didn't include `detonation_timer` field (added in Epic 006)
+- **Resolution:** Added `detonation_timer=t.detonation_timer` to `copy_torpedo()` function
+- **Impact:** 12 torpedo detonation tests now pass
+- **Verification:** All timed detonation tests passing
+
+**Issue 3: Tests referenced private `_parse_torpedo_action()` method**
+- **Problem:** `test_timed_detonation.py` called `physics_engine._parse_torpedo_action()`
+- **Resolution:** Updated tests to import `parse_torpedo_action` from utils module
+- **Impact:** Better test isolation, tests shared utility directly
+
+**Issue 4: BlastZonePhase vs BlastPhase naming**
+- **Problem:** Test tried to import `BlastPhase` but actual enum is `BlastZonePhase`
+- **Resolution:** Updated import in `test_utils.py` to use correct enum name
+- **Impact:** Test compilation fixed
+
+No other issues encountered. All 270 tests passing with enhanced functionality.
 
 ---
 
