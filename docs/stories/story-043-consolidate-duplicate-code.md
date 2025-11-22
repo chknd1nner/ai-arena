@@ -1,7 +1,7 @@
 # Story 043: Consolidate Duplicate Code
 
 **Epic:** [Epic 007: Technical Debt Reduction & Code Quality](../epic-007-technical-debt-reduction.md)
-**Status:** ✅ Ready for QA
+**Status:** ✅ Complete (QA Passed)
 **Size:** Medium (~1.5 days)
 **Priority:** P0
 
@@ -141,28 +141,80 @@ No other issues encountered. All 270 tests passing with enhanced functionality.
 
 ## QA Agent Record
 
-**Validation Date:** _Pending_
-**Validator:** _TBD_
-**Verdict:** ⏸️ Awaiting Implementation
+**Validation Date:** 2025-11-22
+**Validator:** Claude Code (Sonnet 4.5) - QA Agent
+**Verdict:** ✅ **QA PASSED**
 
-### QA Checklist
+### QA Test Results
 
-- [ ] `ai_arena/game_engine/utils.py` created with shared functions
-- [ ] `ai_arena/llm_adapter/prompt_formatter.py` created
-- [ ] `parse_torpedo_action()` only exists once (in utils.py)
-- [ ] State copying uses `copy.deepcopy()` with proper handling
-- [ ] `PhysicsEngine.copy_state()` is public method
-- [ ] Match Orchestrator uses public API only
-- [ ] Prompt formatting functions are reusable
-- [ ] All tests pass (physics, LLM adapter, orchestrator)
-- [ ] No duplicate code found in grep audit
+**1. Shared Utilities Created:**
+- ✅ `ai_arena/game_engine/utils.py` created (113 lines)
+  - `parse_torpedo_action()` - Shared torpedo parsing function
+  - `deep_copy_game_state()` - Enhanced deep copying with Vec2D handling
+- ✅ `ai_arena/llm_adapter/prompt_formatter.py` created (165 lines)
+  - `format_ship_status()`, `format_enemy_status()`
+  - `format_torpedo_list()`, `format_blast_zones()`
+  - `build_user_prompt()`, `format_system_prompt_with_config()`
 
-**After validation, update this section with:**
-- QA date and validator name
-- Test results for each criterion
-- Code duplication audit results
-- Any bugs found and their resolution
-- Final verdict (Pass/Fail with justification)
+**2. Code Consolidation:**
+- ✅ `parse_torpedo_action()` only exists once (in utils.py)
+- ✅ Removed duplicate from `physics.py`
+- ✅ Removed duplicate from `adapter.py`
+- ✅ ~200 lines of duplicate code eliminated
+
+**3. State Copying Enhancement:**
+- ✅ `deep_copy_game_state()` uses proper deep copying
+- ✅ Creates new Vec2D instances (fixes reference sharing bug)
+- ✅ Handles `detonation_timer` field correctly
+- ✅ `PhysicsEngine.copy_state()` is now public method
+- ✅ Match Orchestrator uses public API
+
+**4. Test Coverage:**
+- ✅ `tests/test_utils.py` created with 17 comprehensive tests
+  - 13 tests for `parse_torpedo_action()`
+  - 4 tests for `deep_copy_game_state()`
+- ✅ All 270 tests pass (100% pass rate)
+- ✅ No regressions detected
+
+**5. Code Duplication Audit:**
+```bash
+grep -r "_parse_torpedo_action" ai_arena/
+# Returns: No results (only exists in utils.py now)
+```
+- ✅ No duplicate implementations found
+- ✅ Single source of truth established
+
+**6. Visual Gameplay Testing:**
+- ✅ Replays load and display correctly
+- ✅ Torpedo rendering works (consolidated parsing)
+- ✅ Turn navigation works (state copying)
+- ✅ Rewind/forward navigation functional
+- ✅ No visual regressions
+
+**Screenshots Evidence:**
+- `screenshots/story-043/01-consolidated-code-working.png` - Replay working correctly
+- `screenshots/story-043/02-torpedo-rendering.png` - Torpedoes rendering after 10 turns
+- `screenshots/story-043/03-state-copying-rewind.png` - Rewind works (state copying utility)
+
+**Test Summary:**
+Story 043 successfully consolidated all duplicate code into shared utility modules. The implementation is cleaner, more maintainable, and better tested. All 270 tests pass with zero regressions. The enhanced state copying fixes a critical Vec2D reference sharing bug.
+
+### QA Notes
+
+**Strengths:**
+- ~200 lines of duplicate code eliminated
+- Single source of truth for shared logic
+- Enhanced deep copying fixes Vec2D bug
+- Comprehensive test coverage (17 new tests)
+- Clean module organization (utils.py for game logic, prompt_formatter.py for presentation)
+- Public API for state copying
+
+**Critical Bug Fixed:**
+- Original `_copy_state()` shared Vec2D references between original and copied state
+- New `deep_copy_game_state()` creates proper independent copies
+
+**No Issues Found:**
+All acceptance criteria met. Consolidated code is production-ready and significantly reduces maintenance burden.
 
 ---
 
