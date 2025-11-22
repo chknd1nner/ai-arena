@@ -7,7 +7,7 @@ import numpy as np
 from ai_arena.game_engine.physics import PhysicsEngine
 from tests.helpers import create_test_state, default_orders_b, get_default_orders_b
 from ai_arena.game_engine.data_models import (
-    GameState, ShipState, Orders, Vec2D, MovementType,
+    GameState, ShipState, Orders, Vec2D,
     MovementDirection, RotationCommand, PhaserConfig
 )
 # Fixtures and helpers imported from conftest.py automatically by pytest

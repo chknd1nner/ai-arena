@@ -30,7 +30,7 @@ class MatchOrchestrator:
             orders_a, thinking_a, orders_b, thinking_b = await self.llm_adapter.get_orders_for_both_ships(state)
             
             # Store state before physics resolution for replay
-            state_for_replay = self.physics_engine._copy_state(state)
+            state_for_replay = self.physics_engine.copy_state(state)
 
             new_state, events = self.physics_engine.resolve_turn(state, orders_a, orders_b)
             

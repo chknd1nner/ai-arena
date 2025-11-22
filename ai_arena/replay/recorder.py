@@ -6,7 +6,7 @@ from typing import List
 import copy
 from enum import Enum
 
-from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, BlastZone, Vec2D, MovementType, PhaserConfig
+from ai_arena.game_engine.data_models import GameState, Orders, Event, ShipState, TorpedoState, BlastZone, Vec2D, PhaserConfig
 
 class ReplayRecorder:
     """Records match data for deterministic replay."""

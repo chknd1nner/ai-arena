@@ -8,7 +8,7 @@ changing config values would affect physics behavior.
 import pytest
 from ai_arena.game_engine.physics import PhysicsEngine
 from ai_arena.game_engine.data_models import (
-    GameState, ShipState, Orders, Vec2D, MovementType,
+    GameState, ShipState, Orders, Vec2D,
     MovementDirection, RotationCommand, PhaserConfig
 )
 
@@ -168,18 +168,6 @@ class TestPhysicsEngineUsesConfigValues:
 
 class TestDerivedValues:
     """Test that derived values are computed correctly from config."""
-
-    def test_movement_costs_derived_from_config(self, engine, config):
-        """Verify movement costs are derived from AE per second * decision interval."""
-        decision_interval = config.simulation.decision_interval_seconds
-
-        # Forward movement cost
-        expected_forward = int(config.movement.forward_ae_per_second * decision_interval)
-        assert engine.movement_costs[MovementType.STRAIGHT] == expected_forward
-
-        # Stop should be free
-        expected_stop = int(config.movement.stop_ae_per_second * decision_interval)
-        assert engine.movement_costs[MovementType.STOP] == expected_stop
 
     def test_torpedo_initial_ae_from_config(self, engine, config):
         """Verify torpedo starts with max_ae_capacity from config."""

@@ -9,7 +9,6 @@ from ai_arena.game_engine.data_models import (
     MovementDirection,
     RotationCommand,
     Orders,
-    MovementType,
     ShipState,
     Vec2D,
     PhaserConfig
@@ -128,38 +127,18 @@ class TestOrdersDataclass:
             assert orders.rotation == rotation
 
     def test_orders_with_torpedo_orders(self):
-        """Verify torpedo orders still use MovementType (legacy system)."""
+        """Verify torpedo orders use simple string commands."""
         orders = Orders(
             movement=MovementDirection.FORWARD,
             rotation=RotationCommand.NONE,
             weapon_action="MAINTAIN_CONFIG",
             torpedo_orders={
-                "torpedo_1": MovementType.HARD_LEFT,
-                "torpedo_2": MovementType.STRAIGHT
+                "torpedo_1": "HARD_LEFT",
+                "torpedo_2": "STRAIGHT"
             }
         )
-        assert orders.torpedo_orders["torpedo_1"] == MovementType.HARD_LEFT
-        assert orders.torpedo_orders["torpedo_2"] == MovementType.STRAIGHT
-
-
-class TestBackwardCompatibility:
-    """Test that legacy MovementType enum still exists for torpedoes."""
-
-    def test_movement_type_still_exists(self):
-        """Verify MovementType enum still exists for torpedo compatibility."""
-        assert MovementType.STRAIGHT
-        assert MovementType.HARD_LEFT
-        assert MovementType.HARD_RIGHT
-        assert MovementType.SOFT_LEFT
-        assert MovementType.SOFT_RIGHT
-        assert MovementType.REVERSE
-        assert MovementType.REVERSE_LEFT
-        assert MovementType.REVERSE_RIGHT
-        assert MovementType.STOP
-
-    def test_movement_type_count(self):
-        """Verify MovementType has 9 values."""
-        assert len(MovementType) == 9
+        assert orders.torpedo_orders["torpedo_1"] == "HARD_LEFT"
+        assert orders.torpedo_orders["torpedo_2"] == "STRAIGHT"
 
 
 class TestShipStateCooldown:

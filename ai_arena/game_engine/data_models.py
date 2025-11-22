@@ -35,18 +35,6 @@ class Vec2D:
     def to_tuple(self) -> Tuple[float, float]:
         return (self.x, self.y)
 
-class MovementType(Enum):
-    """Legacy movement type for torpedo orders (still uses coupled system)."""
-    STRAIGHT = "STRAIGHT"
-    SOFT_LEFT = "SOFT_LEFT"
-    SOFT_RIGHT = "SOFT_RIGHT"
-    HARD_LEFT = "HARD_LEFT"
-    HARD_RIGHT = "HARD_RIGHT"
-    REVERSE = "REVERSE"
-    REVERSE_LEFT = "REVERSE_LEFT"
-    REVERSE_RIGHT = "REVERSE_RIGHT"
-    STOP = "STOP"
-
 class MovementDirection(Enum):
     """Movement direction relative to current heading.
 
@@ -158,8 +146,8 @@ class Orders:
     - torpedo_orders: Dict mapping torpedo_id to action string
                       (e.g., "HARD_LEFT" or "detonate_after:8.5")
     """
-    movement: MovementDirection      # Changed from MovementType
-    rotation: RotationCommand        # NEW: Independent rotation
+    movement: MovementDirection      # Ship movement direction (independent of rotation)
+    rotation: RotationCommand        # Ship rotation (independent of movement)
     weapon_action: str
     torpedo_orders: Dict[str, str] = field(default_factory=dict)
 

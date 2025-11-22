@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 from ai_arena.game_engine.data_models import (
     GameState, Orders, Event, ShipState, TorpedoState, Vec2D,
-    MovementType, MovementDirection, RotationCommand, PhaserConfig,
+    MovementDirection, RotationCommand, PhaserConfig,
     BlastZone, BlastZonePhase
 )
+from ai_arena.game_engine.utils import parse_torpedo_action, deep_copy_game_state
 from ai_arena.config import GameConfig
 
 # ============= Core Engine =============
@@ -67,36 +68,18 @@ class PhysicsEngine:
             RotationCommand.HARD_RIGHT: -config.rotation.hard_turn_degrees_per_second,
         }
 
-        # Legacy movement costs for validation (deprecated, will be removed)
-        # Kept for backward compatibility during transition
+        # Torpedo rotation angles (simple string-based commands)
+        # Torpedoes use simple coupled movement (rotation angle per command)
+        self.TORPEDO_ROTATION_ANGLES = {
+            "STRAIGHT": 0,
+            "SOFT_LEFT": np.radians(15),
+            "SOFT_RIGHT": -np.radians(15),
+            "HARD_LEFT": np.radians(45),
+            "HARD_RIGHT": -np.radians(45),
+        }
+
+        # AE costs and regeneration (using decision interval)
         decision_interval = config.simulation.decision_interval_seconds
-        self.movement_costs = {
-            MovementType.STRAIGHT: int(config.movement.forward_ae_per_second * decision_interval),
-            MovementType.SOFT_LEFT: int(config.movement.diagonal_ae_per_second * decision_interval),
-            MovementType.SOFT_RIGHT: int(config.movement.diagonal_ae_per_second * decision_interval),
-            MovementType.HARD_LEFT: int(config.movement.perpendicular_ae_per_second * decision_interval),
-            MovementType.HARD_RIGHT: int(config.movement.perpendicular_ae_per_second * decision_interval),
-            MovementType.REVERSE: int(config.movement.backward_ae_per_second * decision_interval),
-            MovementType.REVERSE_LEFT: int(config.movement.backward_diagonal_ae_per_second * decision_interval),
-            MovementType.REVERSE_RIGHT: int(config.movement.backward_diagonal_ae_per_second * decision_interval),
-            MovementType.STOP: int(config.movement.stop_ae_per_second * decision_interval),
-        }
-
-        # Movement parameters (rotation angles) for torpedoes
-        # Torpedoes still use the old coupled movement system
-        self.movement_params = {
-            MovementType.STRAIGHT: {"rotation": 0},
-            MovementType.SOFT_LEFT: {"rotation": np.radians(15)},
-            MovementType.SOFT_RIGHT: {"rotation": -np.radians(15)},
-            MovementType.HARD_LEFT: {"rotation": np.radians(45)},
-            MovementType.HARD_RIGHT: {"rotation": -np.radians(45)},
-            MovementType.REVERSE: {"rotation": np.radians(180)},
-            MovementType.REVERSE_LEFT: {"rotation": np.radians(30)},
-            MovementType.REVERSE_RIGHT: {"rotation": -np.radians(30)},
-            MovementType.STOP: {"rotation": 0},
-        }
-
-        # AE regeneration per turn
         self.ae_regen_per_turn = int(
             config.ship.ae_regen_per_second * decision_interval
         )
@@ -112,7 +95,7 @@ class PhysicsEngine:
         Uses fixed timestep for determinism.
         """
         events = []
-        new_state = self._copy_state(state)
+        new_state = self.copy_state(state)
         new_state.turn += 1
 
         # 1. Validate and apply orders
@@ -169,15 +152,18 @@ class PhysicsEngine:
         
         return new_state, events
     
-    def _copy_state(self, state: GameState) -> GameState:
-        # A proper deepcopy would be better, but this is fine for now
-        return GameState(
-            turn=state.turn,
-            ship_a=ShipState(**state.ship_a.__dict__),
-            ship_b=ShipState(**state.ship_b.__dict__),
-            torpedoes=[TorpedoState(**t.__dict__) for t in state.torpedoes],
-            blast_zones=[BlastZone(**bz.__dict__) for bz in state.blast_zones]
-        )
+    def copy_state(self, state: GameState) -> GameState:
+        """Create a deep copy of game state.
+
+        Public method for external use (e.g., Match Orchestrator).
+
+        Args:
+            state: GameState to copy
+
+        Returns:
+            Deep copy of the state
+        """
+        return deep_copy_game_state(state)
 
     def _get_movement_ae_rate(self, movement: MovementDirection) -> float:
         """Get AE cost rate for movement direction.
@@ -290,7 +276,7 @@ class PhysicsEngine:
 
             if action_str:
                 try:
-                    action_type, delay = self._parse_torpedo_action(action_str)
+                    action_type, delay = parse_torpedo_action(action_str)
                     if action_type == "detonate_after":
                         # Set detonation timer
                         torpedo.detonation_timer = delay
@@ -378,25 +364,26 @@ class PhysicsEngine:
             dt: Time delta for this substep
         """
         # Parse action to determine if it's a movement command
-        movement = None
+        rotation_angle = 0
         if action_str and not torpedo.just_launched:
             try:
-                action_type, _ = self._parse_torpedo_action(action_str)
+                action_type, _ = parse_torpedo_action(action_str)
                 # Only process movement commands (ignore detonate_after)
                 if action_type != "detonate_after":
-                    # Parse as MovementType
-                    try:
-                        movement = MovementType[action_type.upper()]
-                    except KeyError:
+                    # Parse as simple string command
+                    action_upper = action_type.upper()
+                    if action_upper in self.TORPEDO_ROTATION_ANGLES:
+                        rotation_angle = self.TORPEDO_ROTATION_ANGLES[action_upper]
+                    else:
                         logger.warning(f"Invalid torpedo movement '{action_type}', defaulting to STRAIGHT")
-                        movement = MovementType.STRAIGHT
+                        rotation_angle = 0
             except ValueError:
                 # Invalid action format, ignore
                 pass
 
         # Apply movement (rotation)
-        if not torpedo.just_launched and movement:
-            rotation_per_dt = self.movement_params.get(movement, {"rotation": 0})["rotation"] * dt / self.action_phase_duration
+        if not torpedo.just_launched and rotation_angle != 0:
+            rotation_per_dt = rotation_angle * dt / self.action_phase_duration
             torpedo.heading += rotation_per_dt
             torpedo.heading = torpedo.heading % (2 * np.pi)
 
@@ -409,37 +396,6 @@ class PhysicsEngine:
 
         # AE burn
         torpedo.ae_remaining -= self.config.torpedo.ae_burn_straight_per_second * dt
-
-    def _parse_torpedo_action(self, action_str: str) -> Tuple[str, Optional[float]]:
-        """Parse torpedo action string.
-
-        Args:
-            action_str: e.g., "HARD_LEFT" or "detonate_after:8.5"
-
-        Returns:
-            (action_type, delay) where delay is None for movement commands
-
-        Raises:
-            ValueError: If delay is outside valid range [0.0, 15.0] or format is invalid
-        """
-        if ":" in action_str:
-            # Handle "detonate_after:X" commands
-            parts = action_str.split(":", 1)
-            if parts[0].lower() == "detonate_after":
-                try:
-                    delay = float(parts[1])
-                except (ValueError, IndexError) as e:
-                    logger.error(f"Invalid detonation delay format: {action_str}")
-                    raise ValueError(f"Invalid detonation delay format: {action_str}") from e
-
-                # Validate delay range
-                if delay < 0.0 or delay > 15.0:
-                    raise ValueError(f"Detonation delay {delay} outside valid range [0.0, 15.0]")
-
-                return ("detonate_after", delay)
-
-        # Regular movement command
-        return (action_str, None)
 
     def _update_blast_zones(self, blast_zones: List[BlastZone], dt: float):
         """Update all blast zones per substep (lifecycle progression).
